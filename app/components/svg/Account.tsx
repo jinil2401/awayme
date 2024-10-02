@@ -4,7 +4,7 @@ import { IIconProps } from "./interface";
 export default function AccountSvg({
   width = "24",
   height = "24",
-  fill = "#913838",
+  fill = "#9095A0",
 }: IIconProps) {
   return (
     <svg

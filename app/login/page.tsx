@@ -133,12 +133,12 @@ export default function Login() {
             />
             {error.apiError && <ApiError errorMessage={error.apiError} />}
             <Button
-                isDisabled={isLoading}
-                isLoading={isLoading}
-                buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white w-[250px] justify-center mx-auto my-6"
-                buttonText="Log In"
-                onClick={() => handleLogin()}
-              />
+              isDisabled={isLoading}
+              isLoading={isLoading}
+              buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white w-[250px] justify-center mx-auto my-6"
+              buttonText="Log In"
+              onClick={() => handleLogin()}
+            />
             <div className="py-6">
               <p className="text-subHeading text-md text-center leading-[24px]">
                 By continuing you agree to our <br />

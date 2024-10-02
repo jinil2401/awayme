@@ -5,6 +5,9 @@ const CalendarSchema = new Schema(
     name: {
       type: String,
     },
+    email: {
+      type: String,
+    },
     provider: {
         type: String,
     },
