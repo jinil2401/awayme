@@ -144,7 +144,7 @@ export default function Register() {
           alt="Auth Illustration"
           className="h-[400px]"
         />
-        <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/50">
+        <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/20">
           <h1 className="font-archivo text-3xl leading-[56px] font-bold text-heading">
             Let's Get Started 🚀
           </h1>

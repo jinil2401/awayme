@@ -101,7 +101,7 @@ export default function Login() {
           alt="Auth Illustration"
           className="h-[400px]"
         />
-        <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/50">
+        <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/20">
           <h1 className="font-archivo text-3xl leading-[56px] font-bold text-heading">
             Welcome Back 👋
           </h1>
@@ -112,6 +112,7 @@ export default function Login() {
             <Input
               type="email"
               hasLabel
+              value={email}
               label="Email"
               placeholder="Enter your email address"
               onChange={(event) => setEmail(event.target.value)}
@@ -122,6 +123,7 @@ export default function Login() {
             <Input
               type="password"
               hasLabel
+              value={password}
               label="Password"
               placeholder="Enter your password"
               onChange={(event) => setPassword(event.target.value)}
