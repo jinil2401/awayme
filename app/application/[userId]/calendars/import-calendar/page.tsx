@@ -3,10 +3,13 @@ import CalendarNameModel from "@/app/components/calendar-name-model";
 import Sidebar from "@/app/components/sidebar";
 import TopBar from "@/app/components/topbar";
 import { CalendarTypes } from "@/constants/calendarTypes";
+import { useUserContext } from "@/context/userContext";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import React, { useState } from "react";
 
 export default function ImportCalendar() {
+  const { user } = useUserContext();
   const [calendar, setCalendar] = useState({
     toggle: false,
     type: "",
@@ -17,6 +20,14 @@ export default function ImportCalendar() {
       <div className="flex-1 h-screen overflow-auto">
         <TopBar />
         <div className="px-8 py-4">
+          <div className="my-2">
+            <Link
+              href={`/application/${user?._id}/calendars`}
+              className="text-heading underline font-medium text-md leading-md"
+            >
+              Your Calendars
+            </Link>
+          </div>
           <div className="flex flex-col pb-12">
             <h3 className="font-archivo text-2xl leading-[48px] text-heading font-bold">
               Import Calendar
@@ -82,12 +93,16 @@ export default function ImportCalendar() {
               type: "",
               toggle: false,
             }));
-            if(accountType.toLowerCase() === CalendarTypes.GOOGLE.toLowerCase()) {
-                signIn('google')
-                return
+            if (
+              accountType.toLowerCase() === CalendarTypes.GOOGLE.toLowerCase()
+            ) {
+              signIn("google");
+              return;
             }
-            if(accountType.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()) {
-                console.log("we will call the microsoft calendar api here...")
+            if (
+              accountType.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
+            ) {
+              console.log("we will call the microsoft calendar api here...");
             }
           }}
         />

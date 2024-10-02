@@ -14,6 +14,7 @@ const config: Config = {
         subHeading: "#9095A0",
         placeholder: "#BCC1CA",
         stroke: "#BCC1CA",
+        success: "#10BC17",
         error: "#913838",
       },
       fontFamily: {

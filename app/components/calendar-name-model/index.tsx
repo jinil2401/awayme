@@ -69,6 +69,7 @@ export default function CalendarNameModel({
             type="text"
             hasLabel
             value={name}
+            maxLength={40}
             label="Calendar Name"
             placeholder="Enter your calendar name"
             onChange={(event) => setName(event.target.value)}
