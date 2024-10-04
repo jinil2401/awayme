@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UserContext } from "@/context/userContext";
+import { CalendarContext } from "@/context/calendarContext";
 
 export const metadata: Metadata = {
   title: "Away Me",
@@ -14,10 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className="antialiased"
-      >
-         <UserContext>{children}</UserContext>
+      <body className="antialiased">
+        <UserContext>
+          <CalendarContext>{children}</CalendarContext>
+        </UserContext>
       </body>
     </html>
   );

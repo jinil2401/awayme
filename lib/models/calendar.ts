@@ -9,21 +9,21 @@ const CalendarSchema = new Schema(
       type: String,
     },
     provider: {
-        type: String,
+      type: String,
     },
     access_token: {
-        type: String,
+      type: String,
     },
     refresh_token: {
-        type: String,
+      type: String,
     },
     expires_at: {
-        type: String,
+      type: String,
     },
     user: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-    }
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   {
     timestamps: true,

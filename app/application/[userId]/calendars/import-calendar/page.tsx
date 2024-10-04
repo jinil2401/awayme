@@ -96,7 +96,10 @@ export default function ImportCalendar() {
             if (
               accountType.toLowerCase() === CalendarTypes.GOOGLE.toLowerCase()
             ) {
-              signIn("google");
+              signIn("google",{
+                redirect: true,
+                callbackUrl: `/application/${user?._id}/calendars`,
+              });
               return;
             }
             if (

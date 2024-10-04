@@ -3,8 +3,8 @@ import Button from "@/app/components/button";
 import Sidebar from "@/app/components/sidebar";
 import TopBar from "@/app/components/topbar";
 import { useUserContext } from "@/context/userContext";
-import { deleteData, fetchData } from "@/utils/fetch";
-import React, { useCallback, useEffect, useState } from "react";
+import { deleteData } from "@/utils/fetch";
+import React, { useState } from "react";
 import { ICalendar } from "./interface";
 import { useRouter } from "next/navigation";
 import { CalendarTypes } from "@/constants/calendarTypes";
@@ -12,16 +12,16 @@ import ApiError from "@/app/components/api-error";
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import ApiSuccess from "@/app/components/api-success";
 import DeleteModal from "@/app/components/delete-modal";
+import { useCalendarContext } from "@/context/calendarContext";
 
 export default function Calendars() {
   const router = useRouter();
 
   // CONTEXT
   const { user } = useUserContext();
+  const { calendars, setToggleFetchUserCalendars } = useCalendarContext();
 
   // STATES
-  const [isLoading, setIsLoading] = useState(true);
-  const [calendars, setCalendars] = useState<ICalendar[]>([]);
   const [deleteCalendarLoading, setDeleteCalendarLoading] = useState(false);
   const [successDeleteMessage, setSuccessDeleteMessage] = useState("");
   const [deleteModal, setDeleteModal] = useState<{
@@ -34,30 +34,6 @@ export default function Calendars() {
   const [error, setError] = useState({
     apiError: "",
   });
-
-  const fetchAllCalendars = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetchData(`/api/calendars?userId=${user?._id}`);
-      const { data } = response;
-      setCalendars(data);
-    } catch (err: any) {
-      setError((error) => ({
-        ...error,
-        apiError: err.message,
-      }));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAllCalendars();
-
-    return () => {
-      setIsLoading(false);
-    };
-  }, [fetchAllCalendars]);
 
   async function handleDeleteCalendar() {
     setDeleteCalendarLoading(true);
@@ -72,7 +48,7 @@ export default function Calendars() {
         toggle: false,
         data: {},
       });
-      fetchAllCalendars();
+      setToggleFetchUserCalendars(true);
     } catch (err: any) {
       setError((error) => ({
         ...error,
@@ -84,38 +60,17 @@ export default function Calendars() {
   }
 
   function renderCalendarList() {
-    if (isLoading) {
+    if (calendars?.length <= 0) {
       return (
-        <p className="text-lg leading-[36px] text-heading">
-          Fetching your calendars
+        <p className="text-lg text-subHeading">
+          You do not have any calendars imported. Import the calendar to see the
+          events on the dashboard page
         </p>
       );
     }
 
-    if (calendars?.length <= 0) {
-      return (
-        <div className="flex flex-col gap-4">
-          <p className="text-xl leading-[36px] text-subHeading">
-            You do not have any calendars imported. Import the calendar to see
-            the events on the dashboard page
-          </p>
-          <div className="flex">
-            <Button
-              buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-              buttonText="Import Calendar"
-              onClick={() =>
-                router.push(
-                  `/application/${user?._id}/calendars/import-calendar`
-                )
-              }
-            />
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div className="flex items-center gap-4 mt-6">
+      <div className="flex items-center gap-4">
         {calendars.map((calendar: ICalendar) => {
           const isCalendarGoogle =
             calendar?.provider?.toLowerCase() ===
@@ -130,7 +85,7 @@ export default function Calendars() {
                 className="w-[50px] mx-auto"
               />
               <hr />
-              <div className="h-[70px]">
+              <div className="h-[50px]">
                 <p className="text-sm text-subHeading">Name</p>
                 <p className="text-base font-medium leading-md text-heading">
                   {capitalizeFirstLetter(calendar?.name || "")}
@@ -174,39 +129,30 @@ export default function Calendars() {
               setMessage={(value) => setSuccessDeleteMessage(value)}
             />
           )}
-          <div className="flex flex-col pb-12">
+          <div className="flex flex-col pb-8">
             <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
               Calendars
             </h3>
-            <p className="text-xl leading-[36px] text-subHeading">
+            <p className="text-lg leading-[36px] text-subHeading">
               Here are all the calendars you have imported. You can add more
               calendars here.
             </p>
             <div className="flex mt-6">
               <Button
                 buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-                buttonText="Fill Calendar"
-                onClick={() => console.log("Fill Calendar")}
+                buttonText="Import Calendar"
+                onClick={() =>
+                  router.push(
+                    `/application/${user?._id}/calendars/import-calendar`
+                  )
+                }
               />
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-6">
-              <h3 className="font-archivo text-2xl leading-[36px] text-heading font-semibold">
-                Your Calendars
-              </h3>
-              {calendars.length > 0 && (
-                <Button
-                  buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-                  buttonText="Import Calendar"
-                  onClick={() =>
-                    router.push(
-                      `/application/${user?._id}/calendars/import-calendar`
-                    )
-                  }
-                />
-              )}
-            </div>
+            <h3 className="font-archivo text-2xl leading-[36px] text-heading font-semibold">
+              Your Calendars
+            </h3>
             <div className="mb-8">{renderCalendarList()}</div>
           </div>
         </div>

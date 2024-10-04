@@ -9,6 +9,7 @@ import connect from "@/lib/db";
 import User from "@/lib/models/user";
 import Calendar from "@/lib/models/calendar";
 import { Types } from "mongoose";
+import { encrypt } from "@/utils/crypto";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID || "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
@@ -73,20 +74,18 @@ export const authOptions: AuthOptions = {
         // if the calendar exists in the database
         if (selectedCalendar) {
           // delete the calendar name from the cookies
-          cookieStore.delete("calendarName")
+          cookieStore.delete("calendarName");
           // throw an error stating that the calendar is already in the database
-          throw new Error('user calendar is already imported!');
+          throw new Error("user calendar is already imported!");
         }
 
         // extract the access and the refresh token
         const accessToken = account?.access_token || "";
         const refreshToken = account?.refresh_token || "";
 
-        // encrypt the access token using bcrypt
-        const hashedAccessToken = await bcrypt.hash(accessToken, 12);
-
-        // encrypt the refresh token using bcrypt
-        const hashedRefreshToken = await bcrypt.hash(refreshToken, 12);
+        // excrypt the access token and refresh token
+        const access_token = encrypt(accessToken);
+        const refresh_token = encrypt(refreshToken);
 
         // add a new calendar in the database
         // create the new calendar object
@@ -94,9 +93,9 @@ export const authOptions: AuthOptions = {
         const newCalendar = new Calendar({
           name: calendarName,
           email: user?.email,
+          access_token,
+          refresh_token,
           provider: account?.provider,
-          access_token: hashedAccessToken,
-          refresh_token: hashedRefreshToken,
           expires_at: account?.expires_at,
           user: new Types.ObjectId(selectedUser._id),
         });
@@ -105,7 +104,7 @@ export const authOptions: AuthOptions = {
         await newCalendar.save();
 
         // delete the calendar name from the cookies
-        cookieStore.delete("calendarName")
+        cookieStore.delete("calendarName");
       }
       return true;
     },
@@ -120,7 +119,7 @@ export const authOptions: AuthOptions = {
   },
   pages: {
     error: "/auth/error",
-  }
+  },
 };
 
 export interface EnrichedSession extends Session {

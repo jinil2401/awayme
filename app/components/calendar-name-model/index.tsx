@@ -31,7 +31,7 @@ export default function CalendarNameModel({
     }
     setIsLoading(true);
     try {
-      const response = await postData("/api/add-calendar", {
+      const response = await postData("/api/store-calendar-name-in-cookies", {
         name
       });
       const { data } = response;
