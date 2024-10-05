@@ -38,7 +38,6 @@ export default function Dashboard() {
           start: new Date(eventData?.start?.dateTime),
           end: new Date(eventData?.end?.dateTime),
         }));
-        console.log("events", events);
         setEvents(events);
       } catch (err: any) {
         setError((error) => ({

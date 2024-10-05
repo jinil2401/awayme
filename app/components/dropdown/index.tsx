@@ -1,5 +1,6 @@
 import React from "react";
 import { IDropdownProps } from "./interface";
+import ArrowDownSvg from "../svg/ArrowDown";
 
 export default function Dropdown(props: IDropdownProps) {
   const {
@@ -13,16 +14,19 @@ export default function Dropdown(props: IDropdownProps) {
     isDisabled,
   } = props;
   return (
-    <div className="py-2">
+    <div className="py-2 relative">
       <label
         htmlFor={id}
         className="block text-sm text-heading mb-2 font-inter"
       >
         {label}
       </label>
+      <div className="absolute top-[45px] right-[10px] z-10">
+          <ArrowDownSvg width="20" height="20" fill="#BCC1CA" />
+        </div>
       <select
         id={id}
-        className={`w-full px-4 py-2 mb-2 outline-none bg-white border placeholder:text-sm placeholder:text-grey rounded-md ${
+        className={`w-full pl-4 pr-8 py-2 mb-2 outline-none bg-white border placeholder:text-sm placeholder:text-grey rounded-md appearance-none relative ${
           hasError ? "border-error" : "border-stroke/50"
         }`}
         disabled={isDisabled}
