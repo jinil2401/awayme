@@ -76,7 +76,7 @@ export default function Calendars() {
             calendar?.provider?.toLowerCase() ===
             CalendarTypes.GOOGLE.toLowerCase();
           return (
-            <div className="w-[250px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6">
+            <div className="w-[255px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6">
               <img
                 src={`${
                   isCalendarGoogle ? "/google-icon.png" : "/outlook-icon.png"
@@ -91,7 +91,7 @@ export default function Calendars() {
                   {capitalizeFirstLetter(calendar?.name || "")}
                 </p>
               </div>
-              <div>
+              <div className="h-[50px]">
                 <p className="text-sm text-subHeading">Email</p>
                 <p className="text-base font-medium leading-md text-heading break-words">
                   {capitalizeFirstLetter(calendar?.email || "")}
@@ -159,7 +159,7 @@ export default function Calendars() {
       </div>
       {deleteModal.toggle && (
         <DeleteModal
-          heading="Delete Product"
+          heading="Delete Calendar"
           subHeading={`Are you sure you want to delete your calendar named "${deleteModal.data.name}". Please keep in mind that these changes will not be reverted`}
           isLoading={deleteCalendarLoading}
           onCancel={() =>

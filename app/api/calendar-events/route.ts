@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions, EnrichedSession } from "../auth/[...nextauth]/route";
 import googleClient from "@/lib/googleClient";
 import { Types } from "mongoose";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
 import { decrypt } from "@/utils/crypto";
-// import microsoftClient from "@/lib/microsoftClient";
-
-const getGoogleEvents = async ({
-  accessToken,
-  refreshToken,
-}: {
+import { CalendarTypes } from "@/constants/calendarTypes";
+import axios from "axios";
+interface IEventTypes {
   accessToken: string;
   refreshToken: string;
-}) => {
+}
+
+const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   const calendar = googleClient({
     accessToken,
     refreshToken,
@@ -27,24 +24,49 @@ const getGoogleEvents = async ({
     singleEvents: true,
     orderBy: "startTime",
   });
-  return res.data.items;
+
+  // extract the events to format
+  const response = res.data.items;
+
+  // format the events for the calendar component
+  const events = response?.map((eventData: any) => ({
+    id: eventData?.id,
+    title: eventData?.summary,
+    start: eventData?.start,
+    end: eventData?.end,
+  }));
+
+  // return the events 
+  return events;
 };
 
-// const getMicrosoftEvents = async () => {
-//   const cookieStore = cookies();
-//   const accessToken = cookieStore.get("accessToken")?.value;
+const getMicrosoftEvents = async ({
+  accessToken,
+  refreshToken,
+}: IEventTypes) => {
+  const calendarResponse = await axios.get(
+    "https://graph.microsoft.com/v1.0/me/events",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 
-//   console.log("accessToken", accessToken);
-//   const calendarResponse = await axios.get(
-//     "https://graph.microsoft.com/v1.0/me/events",
-//     {
-//       headers: {
-//         Authorization: `Bearer ${accessToken}`,
-//       },
-//     }
-//   );
-//   return calendarResponse.data.value;
-// };
+  // extract the events to format
+  const response = calendarResponse.data.value;
+
+  // format the events for the calendar component
+  const events = response?.map((eventData: any) => ({
+    id: eventData?.id,
+    title: eventData?.subject,
+    start: eventData?.start,
+    end: eventData?.end,
+  }));
+
+  // return the events
+  return events;
+};
 
 // get exents for a calendar based on given id
 export async function GET(request: Request) {
@@ -98,20 +120,27 @@ export async function GET(request: Request) {
   // fetch the calendar based on the both id
   let events;
   //   Fetch events based on the provider
-  if (calendar?.provider === "google") {
+  if (calendar?.provider.toLowerCase() === CalendarTypes.GOOGLE.toLowerCase()) {
     // fetch the encrpted access token and refresh token
     const { access_token, refresh_token } = calendar;
-
 
     // decrypt the access token and refresh token
     const accessToken = decrypt(access_token);
     const refreshToken = decrypt(refresh_token);
     // pass it to the function
     events = await getGoogleEvents({ accessToken, refreshToken });
+  } else if (
+    calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
+  ) {
+    // fetch the encrpted access token and refresh token
+    const { access_token, refresh_token } = calendar;
+
+    // decrypt the access token and refresh token
+    const accessToken = decrypt(access_token);
+    const refreshToken = decrypt(refresh_token);
+    // pass it to the function
+    events = await getMicrosoftEvents({ accessToken, refreshToken });
   }
-  // else if (session.provider === "azure-ad") {
-  //   events = await getMicrosoftEvents();
-  // }
 
   return new NextResponse(
     JSON.stringify(
@@ -123,7 +152,7 @@ export async function GET(request: Request) {
       4
     ),
     {
-      status: 201,
+      status: 200,
     }
   );
 }

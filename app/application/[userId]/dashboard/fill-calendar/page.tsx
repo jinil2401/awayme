@@ -36,9 +36,9 @@ export default function FillCalendar() {
         `/api/calendar-events?calendarId=${sourceCalendar?._id}&userId=${user?._id}`
       );
       const { data } = response;
-      const events = data?.map((eventData: any, index: number) => ({
-        id: index + 1,
-        title: eventData?.summary,
+      const events = data?.map((eventData: any) => ({
+        id: eventData?.id,
+        title: eventData?.title,
         start: new Date(eventData?.start?.dateTime),
         end: new Date(eventData?.end?.dateTime),
       }));
@@ -57,9 +57,9 @@ export default function FillCalendar() {
         `/api/calendar-events?calendarId=${destinationCalendar?._id}&userId=${user?._id}`
       );
       const { data } = response;
-      const events = data?.map((eventData: any, index: number) => ({
-        id: index + 1,
-        title: eventData?.summary,
+      const events = data?.map((eventData: any) => ({
+        id: eventData?.id,
+        title: eventData?.title,
         start: new Date(eventData?.start?.dateTime),
         end: new Date(eventData?.end?.dateTime),
         data: {
@@ -86,14 +86,18 @@ export default function FillCalendar() {
 
   function renderButtonState() {
     if (isLoading) {
-      return <div className="text-heading text-lg mt-4">Fetching your calendar events</div>;
+      return (
+        <div className="text-heading text-lg mt-4">
+          Fetching your calendar events
+        </div>
+      );
     }
     if (fetchEvents) {
       return (
         <div className="flex flex-col gap-8 mt-4">
           <div className="text-subHeading text-lg">
-            Please confirm the events you want to transfer from the source calendar to
-            the destination calendar.
+            Please confirm the events you want to transfer from the source
+            calendar to the destination calendar.
           </div>
           <div className="flex items-center gap-8">
             <Button

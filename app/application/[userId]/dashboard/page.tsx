@@ -32,9 +32,9 @@ export default function Dashboard() {
           `/api/calendar-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}`
         );
         const { data } = response;
-        const events = data?.map((eventData: any, index: number) => ({
-          id: index + 1,
-          title: eventData?.summary,
+        const events = data?.map((eventData: any) => ({
+          id: eventData?.id,
+          title: eventData?.title,
           start: new Date(eventData?.start?.dateTime),
           end: new Date(eventData?.end?.dateTime),
         }));

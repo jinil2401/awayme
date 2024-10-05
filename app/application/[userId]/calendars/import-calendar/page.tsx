@@ -4,16 +4,30 @@ import Sidebar from "@/app/components/sidebar";
 import TopBar from "@/app/components/topbar";
 import { CalendarTypes } from "@/constants/calendarTypes";
 import { useUserContext } from "@/context/userContext";
+import { fetchData } from "@/utils/fetch";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 export default function ImportCalendar() {
   const { user } = useUserContext();
+  const linkRef = useRef<any>();
   const [calendar, setCalendar] = useState({
     toggle: false,
     type: "",
   });
+
+  async function handleMicrosoftLogin() {
+    try {
+        const response = await fetchData("/api/login-with-microsoft");
+        const { data } = response;
+        linkRef.current.href = data;
+        linkRef.current.click();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <div className="flex items-start">
       <Sidebar />
@@ -105,11 +119,12 @@ export default function ImportCalendar() {
             if (
               accountType.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
             ) {
-              console.log("we will call the microsoft calendar api here...");
+              return handleMicrosoftLogin();
             }
           }}
         />
       )}
+      <a ref={linkRef} className="hidden"></a>
     </div>
   );
 }
