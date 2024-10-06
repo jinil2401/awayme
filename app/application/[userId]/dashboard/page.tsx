@@ -49,10 +49,39 @@ export default function Dashboard() {
       }
     }
 
-    if(selectedCalendar && user) {
+    if (selectedCalendar && user) {
       fetchAllEvents();
     }
   }, [selectedCalendar, user]);
+
+  const EMPTY_STATE = (
+    <div className="h-[80vh] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="p-4">
+          <img
+            src="/empty-state.svg"
+            alt="Empty State Illustration for empty results"
+            className="w-[250px]"
+          />
+        </div>
+        <p className="font-archivo text-2xl leading-[36px] text-heading font-semibold text-center">
+          No Data to Display
+        </p>
+        <p className="text-base leading-[24px] text-subHeading text-center max-w-[80%]">
+          Import your calendars and check out the list of events happening here.
+        </p>
+        <div className="mt-4 flex justify-center">
+          <Button
+            buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
+            buttonText="Import Calendar"
+            onClick={() =>
+              router.push(`/application/${user?._id}/calendars/import-calendar`)
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex items-start">
@@ -60,68 +89,75 @@ export default function Dashboard() {
       <div className="flex-1 h-screen overflow-auto">
         <TopBar />
         <div className="px-8 py-4">
-          <div className="flex flex-col pb-8">
-            <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
-              Dashboard
-            </h3>
-            <p className="text-lg leading-[36px] text-subHeading">
-              A detailed view of your calendar events. You can switch between
-              your calendars here
-            </p>
-            <div className="flex mt-6">
-              <Button
-                buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-                buttonText="Fill Calendar"
-                onClick={() =>
-                  router.push(
-                    `/application/${user?._id}/dashboard/fill-calendar`
-                  )
-                }
-              />
-            </div>
-          </div>
-          <div className="flex flex-col pb-8">
-            <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
-              Calendar View
-            </h3>
-            <p className="text-lg leading-[36px] text-subHeading">
-              Select the calendar to view the events
-            </p>
-            <div className="flex mt-2">
-              <Dropdown
-                id="selectCalendar"
-                label="Select Calendar"
-                onClick={(value) => {
-                  const calendar: any = calendars.find(
-                    (calendar) => calendar?._id === value?.id
-                  );
-                  setSelectedCalendar(calendar);
-                }}
-                options={calendars?.map(({ _id = "", name = "" }) => ({
-                  id: _id,
-                  name,
-                }))}
-                selectedOption={{
-                  id: selectedCalendar?._id || "",
-                  name: selectedCalendar?.name || "",
-                }}
-                hasError={error.calendarNameError !== ""}
-                error={error.calendarNameError}
-              />
-            </div>
-            {error.apiError && <ApiError errorMessage={error.apiError} />}
-            <div className="mt-4">
-              {loading ? (
+          {calendars.length <= 0 ? (
+            EMPTY_STATE
+          ) : (
+            <>
+              <div className="flex flex-col pb-8">
+                <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
+                  Dashboard
+                </h3>
                 <p className="text-lg leading-[36px] text-subHeading">
-                  Fetching calendar events for {selectedCalendar?.name}
+                  A detailed view of your calendar events. You can switch
+                  between your calendars here
                 </p>
-              ) : (
-                <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
-                  <MyCalendar events={events} />
+                <div className="flex mt-6">
+                  <Button
+                    isDisabled={calendars.length < 2}
+                    buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
+                    buttonText="Fill Calendar"
+                    onClick={() =>
+                      router.push(
+                        `/application/${user?._id}/dashboard/fill-calendar`
+                      )
+                    }
+                  />
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+              <div className="flex flex-col pb-8">
+                <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
+                  Calendar View
+                </h3>
+                <p className="text-lg leading-[36px] text-subHeading">
+                  Select the calendar to view the events
+                </p>
+                <div className="flex mt-2">
+                  <Dropdown
+                    id="selectCalendar"
+                    label="Select Calendar"
+                    onClick={(value) => {
+                      const calendar: any = calendars.find(
+                        (calendar) => calendar?._id === value?.id
+                      );
+                      setSelectedCalendar(calendar);
+                    }}
+                    options={calendars?.map(({ _id = "", name = "" }) => ({
+                      id: _id,
+                      name,
+                    }))}
+                    selectedOption={{
+                      id: selectedCalendar?._id || "",
+                      name: selectedCalendar?.name || "",
+                    }}
+                    hasError={error.calendarNameError !== ""}
+                    error={error.calendarNameError}
+                  />
+                </div>
+                {error.apiError && <ApiError errorMessage={error.apiError} />}
+                <div className="mt-4">
+                  {loading ? (
+                    <p className="text-lg leading-[36px] text-subHeading">
+                      Fetching calendar events for {selectedCalendar?.name}
+                    </p>
+                  ) : (
+                    <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
+                      <MyCalendar events={events} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
