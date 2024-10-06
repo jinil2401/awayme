@@ -1,4 +1,4 @@
-import { msalConfig } from "@/lib/microsoftConfig";
+import { msalConfig } from "@/lib/microsoftClient";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import { NextResponse } from "next/server";
 

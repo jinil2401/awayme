@@ -17,9 +17,9 @@ export default function ArrowDownSvg({
       <path
         d="M6 9L12 15L18 9"
         stroke={fill}
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

@@ -1,6 +1,6 @@
 import { CalendarTypes } from "@/constants/calendarTypes";
 import connect from "@/lib/db";
-import { msalConfig } from "@/lib/microsoftConfig";
+import { msalConfig } from "@/lib/microsoftClient";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
 import { encrypt } from "@/utils/crypto";

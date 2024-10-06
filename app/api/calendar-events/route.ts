@@ -3,13 +3,17 @@ import googleClient from "@/lib/googleClient";
 import { Types } from "mongoose";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
-import { decrypt } from "@/utils/crypto";
+import { decrypt, encrypt } from "@/utils/crypto";
 import { CalendarTypes } from "@/constants/calendarTypes";
 import axios from "axios";
+import { msalConfig } from "@/lib/microsoftClient";
+import { ConfidentialClientApplication } from "@azure/msal-node";
 interface IEventTypes {
   accessToken: string;
   refreshToken: string;
 }
+
+const cca = new ConfidentialClientApplication(msalConfig);
 
 const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   const calendar = googleClient({
@@ -20,7 +24,7 @@ const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   const res = await calendar.events.list({
     calendarId: "primary",
     timeMin: new Date().toISOString(),
-    timeMax: new Date(new Date().getTime() + 3600000 * 24 * 30).toISOString(), // 30 days in milliseconds
+    maxResults: 100,
     singleEvents: true,
     orderBy: "startTime",
   });
@@ -36,7 +40,7 @@ const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
     end: eventData?.end,
   }));
 
-  // return the events 
+  // return the events
   return events;
 };
 
@@ -45,7 +49,7 @@ const getMicrosoftEvents = async ({
   refreshToken,
 }: IEventTypes) => {
   const calendarResponse = await axios.get(
-    "https://graph.microsoft.com/v1.0/me/events",
+    "https://graph.microsoft.com/v1.0/me/events?$top=100&$expand=instances",
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -133,11 +137,31 @@ export async function GET(request: Request) {
     calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
   ) {
     // fetch the encrpted access token and refresh token
-    const { access_token, refresh_token } = calendar;
+    const { access_token, refresh_token, expires_at } = calendar;
+
+    const current_date = new Date().getTime();
+    const expires_at_time = new Date(expires_at).getTime();
 
     // decrypt the access token and refresh token
-    const accessToken = decrypt(access_token);
+    let accessToken = decrypt(access_token);
     const refreshToken = decrypt(refresh_token);
+
+    if (expires_at_time < current_date) {
+      // fetch latest access token.
+      const result: any = await cca.acquireTokenByRefreshToken({
+        refreshToken: refreshToken,
+        scopes: ["User.Read", "Calendars.Read"],
+      });
+
+      // extract the name, email, access token and expiry from result
+      const { accessToken: access_token, expiresOn } = result;
+      accessToken = access_token;
+      const token = encrypt(access_token);
+
+      calendar.access_token = token;
+      calendar.expires_at = expiresOn;
+      await calendar.save();
+    }
     // pass it to the function
     events = await getMicrosoftEvents({ accessToken, refreshToken });
   }
