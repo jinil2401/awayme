@@ -82,6 +82,9 @@ export default function Login() {
         console.error("Error while setting token in localStorage:", error);
       }
       setUser(data);
+      if(!data?.isVerified) {
+        return router.push(`/email-not-verified`);
+      }
       return router.push(`/application/${data?._id}/dashboard`);
     } catch (err: any) {
       setError((error) => ({

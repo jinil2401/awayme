@@ -1,34 +1,25 @@
 "use client";
 import { fetchData } from "@/utils/fetch";
-import { redirect } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export interface IUser {
   _id: string;
   firstName: string;
   lastName: string;
-  phoneNumber: string;
   email: string;
-  status: boolean;
-  role: {
-    id: string;
-    name: string;
-  };
-  store: string;
+  isVerified: boolean;
+  verifyToken?: string;
+  verifyTokenExpire?: Date;
+  numberOfRetries?: number;
 }
 
 const INITIAL_STATE: IUser = {
   _id: "",
   firstName: "",
   lastName: "",
-  phoneNumber: "",
   email: "",
-  status: false,
-  role: {
-    id: "",
-    name: "",
-  },
-  store: "",
+  isVerified: false,
 };
 
 const Context = createContext<{
@@ -43,7 +34,11 @@ const Context = createContext<{
   setToggleFetchUserDetails: () => {},
 });
 
+const authPathNames = ["/login", "/register"]
+
 export function UserContext({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const userId =
     (typeof window !== "undefined" && localStorage.getItem("userId")) ?? "";
   const [user, setUser] = useState<IUser>(INITIAL_STATE);
@@ -56,10 +51,13 @@ export function UserContext({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetchData(`/api/users/${userId}`);
         const { data } = response;
+        console.log("pathname", pathname);
+        if(!data?.isVerified && !authPathNames.includes(pathname)) {
+          router.push("/email-not-verified");
+        }
         setUser(data);
       } catch (err: any) {
-        // TODO: Shoot a toast message here
-        redirect("/");
+        router.push("/login");
       } finally {
         setIsLoading(false);
       }

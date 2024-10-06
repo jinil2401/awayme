@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
 
     // redirect to the calendar dashboard with user id
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/application/${userData?._id}/calendars`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/application/${selectedUser?._id}/calendars`
     );
   } catch (error: any) {
     return new NextResponse(

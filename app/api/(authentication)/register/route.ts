@@ -1,14 +1,31 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import * as bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import connect from "@/lib/db";
 import User from "@/lib/models/user";
 import { cookies } from "next/headers";
+import { verificationEmailTemplate } from "@/utils/verificationEmailTempelate";
+import { sendEmail } from "@/utils/sendEmail";
+import { IUser } from "@/context/userContext";
+
+function getVerificationToken(user: IUser): string {
+  // Generate the token
+  const verificationToken = crypto.randomBytes(20).toString("hex");
+
+  // Hash the token
+  user.verifyToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  user.verifyTokenExpire = new Date(Date.now() + 30 * 60 * 1000);
+  return verificationToken;
+}
 
 export const POST = async (request: Request) => {
   try {
-    const { firstName, lastName, email, password } =
-      await request.json();
+    const { firstName, lastName, email, password } = await request.json();
 
     // encrypt the password using bcrypt
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -33,8 +50,17 @@ export const POST = async (request: Request) => {
       lastName,
       email,
       password: hashedPassword,
+      numberOfRetries: 0,
     });
+
+    // generate a verification token for the user and save it in the database
+    const verificationToken = getVerificationToken(newUser);
     await newUser.save();
+
+    const verificationLink = `${process.env.NEXT_PUBLIC_BASE_URL}/api/verify-email?verifyToken=${verificationToken}&id=${newUser?._id}`;
+    const message = verificationEmailTemplate(verificationLink);
+    // Send verification email
+    await sendEmail(newUser?.email, "Email Verification", message);
 
     // create a jwt token and send it as a resppnse
     const token = jwt.sign({ newUser }, process.env.TOKEN_SECRET || "sign");

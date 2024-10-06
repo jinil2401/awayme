@@ -123,7 +123,7 @@ export default function Register() {
           console.error("Error while setting token in localStorage:", error);
         }
         setUser(data);
-        return router.push(`/application/${data?._id}/dashboard`);
+        return router.push(`/email-not-verified`);
       }
     } catch (err: any) {
       setError((error) => ({

@@ -2,7 +2,7 @@
 import { ICalendar } from "@/app/application/[userId]/calendars/interface";
 import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import { fetchData } from "@/utils/fetch";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
 const Context = createContext<{
@@ -18,6 +18,7 @@ const Context = createContext<{
 });
 
 export function CalendarContext({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const userId =
     (typeof window !== "undefined" && localStorage.getItem("userId")) ?? "";
   const [calendars, setCalendars] = useState<ICalendar[]>([]);
@@ -41,7 +42,7 @@ export function CalendarContext({ children }: { children: React.ReactNode }) {
         );
       } catch (err: any) {
         // TODO: Shoot a toast message here
-        redirect(`/application/${userId}/calendars`);
+        router.push(`/login`);
       } finally {
         setIsLoading(false);
       }
