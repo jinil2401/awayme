@@ -19,7 +19,6 @@ export default function Billing() {
                 You currently are on <strong className="text-gray-500">Free Version</strong> of Awayme
               </p>
             </header>
-             {/* {error.apiError && <ApiError errorMessage={error.apiError} />} */}
 
             <section className="grid grid-cols-2 gap-8">
               {/* Free Version */}
@@ -32,16 +31,16 @@ export default function Billing() {
                 </div>
                 <ul className="space-y-6">
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ One Calendar per account
+                    ✓ One Calendar per account
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Fill up to 20% capacity
+                    ✓ Fill up to 20% capacity
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Static Event Names and Details
+                    ✓ Static Event Names and Details
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Fill up to two weeks at a time
+                    ✓ Fill up to two weeks at a time
                   </li>
                 </ul>
               </aside>
@@ -53,20 +52,19 @@ export default function Billing() {
                 </div>
                 <ul className="space-y-6">
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Up to 3 Calendars per Account
+                    ✓ Up to 3 Calendars per Account
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Fill up to 100% capacity
+                    ✓ Fill up to 100% capacity
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Random Event Names and Details
+                    ✓ Random Event Names and Details
                   </li>
                   <li className="flex items-center gap-2 font-semibold">
-                    ✔ Fill up to 2 months at a time
+                    ✓ Fill up to 2 months at a time
                   </li>
                 </ul>
                 <footer className="mt-6 flex justify-center items-center">
-                  
                   <Button
                     buttonText="Upgrade Now"
                     buttonClassName="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"

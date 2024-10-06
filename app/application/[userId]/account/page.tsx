@@ -7,9 +7,9 @@ import Button from '@/app/components/button';
 import React, { useState } from 'react';
 
 export default function Account() {
-    const [firstName, setFirstName] = useState("Jinil");
-    const [lastName, setLastName] = useState("Parekh");
-    const [email, setEmail] = useState("parekhjinil@gmail.com");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
 
     const handleUpdate = () => {
         const updatedAccountInfo = {
@@ -39,30 +39,24 @@ export default function Account() {
                         <div className="flex gap-4 mb-6">
                             <div className="w-1/2">
                                 <Input
-                                    label="First Name"
+                                    label=""
                                     hasLabel={true}
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    className="w-full"
-                                    disabled={false}
                                     hasError={false}
                                     error=""
-                                    hasHelperText={false}
-                                    helperText=""
+                                    disabled={false}
                                 />
                             </div>
                             <div className="w-1/2">
                                 <Input
-                                    label="Last Name"
+                                    label=""
                                     hasLabel={true}
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    className="w-full"
-                                    disabled={false}
                                     hasError={false}
                                     error=""
-                                    hasHelperText={false}
-                                    helperText=""
+                                    disabled={false}
                                 />
                             </div>
                         </div>
@@ -70,16 +64,13 @@ export default function Account() {
 
                         <div className="w-full mb-6">
                             <Input
-                                label="Email"
+                                label=""
                                 hasLabel={true}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full"
-                                disabled={false}
                                 hasError={false}
                                 error=""
-                                hasHelperText={false}
-                                helperText=""
+                                disabled={false}
                             />
                         </div>
 
