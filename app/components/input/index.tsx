@@ -26,7 +26,7 @@ const Input = (props: IInputProps) => {
       <input
         id={label}
         className={`font-inter w-full px-4 py-3 mb-2 outline-none border placeholder:text-md placeholder:text-grey ${
-          value ? "bg-white" : "bg-[#c7c7c7]"
+          value ? "bg-white" : "bg-[#F3F4F6]"
         } ${
           hasError ? "border-error" : "border-stroke/50"
         } rounded-md ${className} ${
