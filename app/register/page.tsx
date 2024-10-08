@@ -149,7 +149,7 @@ export default function Register() {
             Let's Get Started 🚀
           </h1>
           <p className="font-archivo text-lg leading-[36px] text-subHeading">
-            Sign up your account
+            Create an account
           </p>
           <form className="pt-4">
             <div className="flex items-center gap-6 w-full">

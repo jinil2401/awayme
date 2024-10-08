@@ -8,6 +8,8 @@ import { cookies } from "next/headers";
 import { verificationEmailTemplate } from "@/utils/verificationEmailTempelate";
 import { sendEmail } from "@/utils/sendEmail";
 import { IUser } from "@/context/userContext";
+import Plan from "@/lib/models/plan";
+import { Types } from "mongoose";
 
 function getVerificationToken(user: IUser): string {
   // Generate the token
@@ -44,6 +46,11 @@ export const POST = async (request: Request) => {
       );
     }
 
+    // fetch all plans
+    const plans = await Plan.find();
+
+    const freePlan: any = plans.filter(plan => plan.planId === "free");
+
     // create the new user object
     const newUser = new User({
       firstName,
@@ -51,6 +58,7 @@ export const POST = async (request: Request) => {
       email,
       password: hashedPassword,
       numberOfRetries: 0,
+      plan: new Types.ObjectId(freePlan?.[0]?._id),
     });
 
     // generate a verification token for the user and save it in the database

@@ -65,10 +65,10 @@ export default function Dashboard() {
           />
         </div>
         <p className="font-archivo text-2xl leading-[36px] text-heading font-semibold text-center">
-          No Data to Display
+          No Calendar Found
         </p>
         <p className="text-base leading-[24px] text-subHeading text-center max-w-[80%]">
-          Import your calendars and check out the list of events happening here.
+          Cick the button below to connect and import a calendar to fill.
         </p>
         <div className="mt-4 flex justify-center">
           <Button
