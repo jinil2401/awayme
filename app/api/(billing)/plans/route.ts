@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connect from "@/lib/db";
 import Plan from "@/lib/models/plan";
+import { Types } from "mongoose";
 
 export const GET = async () => {
   try {
@@ -22,12 +23,12 @@ export const GET = async () => {
 
 export const POST = async (request: Request) => {
   try {
-    const { planId, name, features, price } = await request.json();
+    const { planId, name, features, price, numberOfCalendarsAllowed } = await request.json();
     // establish the connection with database
     await connect();
 
     // create the new plan object
-    const newPlan = new Plan({ planId, name, features, price });
+    const newPlan = new Plan({ planId, name, features, price, numberOfCalendarsAllowed });
     // save the info in the dabatabse
     await newPlan.save();
 
@@ -40,5 +41,68 @@ export const POST = async (request: Request) => {
     );
   } catch (err) {
     return new NextResponse("Error in creating plan " + err, { status: 500 });
+  }
+};
+
+export const PUT = async (request: Request) => {
+  try {
+    // extract the fields from the request object
+    const {
+      planId,
+      numberOfCalendarsAllowed,
+    } = await request.json();
+
+    // check if the planId exist and is valid
+    if (!planId || !Types.ObjectId.isValid(planId)) {
+      return new NextResponse(
+        JSON.stringify({ message: "Invalid or missing planId!" }),
+        { status: 400 }
+      );
+    }
+
+    // establish the connection with database
+    await connect();
+
+    // check if the store exists in the database
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return new NextResponse(
+        JSON.stringify({ message: "Plan does not exist!" }),
+        { status: 400 }
+      );
+    }
+
+    // update the plan
+    const updatedPlan = await Plan.findOneAndUpdate(
+      { _id: plan._id },
+      {
+        numberOfCalendarsAllowed
+      },
+      {
+        new: true,
+      }
+    );
+
+    // check if the process successed
+    if (!updatedPlan) {
+      return new NextResponse(
+        JSON.stringify({ message: "Plan not updated!" }),
+        { status: 400 }
+      );
+    }
+
+    return new NextResponse(
+      JSON.stringify({
+        message: "Plan updated successfully!",
+        data: updatedPlan,
+      }),
+      {
+        status: 200,
+      }
+    );
+  } catch (err) {
+    return new NextResponse("Error in updating plan " + err, {
+      status: 500,
+    });
   }
 };

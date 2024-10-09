@@ -134,7 +134,17 @@ export default function Login() {
               error={error.passwordError}
               disabled={isLoading}
             />
-            {error.apiError && <ApiError errorMessage={error.apiError} />}
+            {error.apiError && (
+            <ApiError
+              message={error.apiError}
+              setMessage={(value) =>
+                setError((error) => ({
+                  ...error,
+                  apiError: value,
+                }))
+              }
+            />
+          )}
             <Button
               isDisabled={isLoading}
               isLoading={isLoading}

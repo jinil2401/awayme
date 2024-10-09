@@ -33,10 +33,32 @@ export async function GET(req: NextRequest) {
     await connect();
 
     // check if the store exists in the database
-    const selectedUser = await User.findById(userData._id);
+    const selectedUser = await User.findById(userData._id).populate({
+      path: "plan",
+      select: ["_id", "planId", "name", "numberOfCalendarsAllowed"],
+    });
     if (!selectedUser) {
       return new NextResponse(
         JSON.stringify({ message: "User does not exist!" }),
+        { status: 400 }
+      );
+    }
+
+    // fetch all the calendars of the user
+    const calendars = await Calendar.find({
+      user: new Types.ObjectId(selectedUser._id),
+    });
+
+    // check if the user is allowed to import the calendar based on the plan
+    if (calendars.length >= selectedUser?.plan?.numberOfCalendarsAllowed) {
+      // delete the calendar name from the cookies
+      cookieStore.delete("calendarName");
+      // throw an error stating that user does not enough credits to import
+      return new NextResponse(
+        JSON.stringify({
+          message:
+            "user does not have enough credits to import this calendar. Please upgrade your plan to import more calendars!",
+        }),
         { status: 400 }
       );
     }
@@ -47,7 +69,7 @@ export async function GET(req: NextRequest) {
       scopes: ["User.Read", "Calendars.Read"],
       redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/callback`,
     });
-    
+
     // extract the name, email, access token and expiry from result
     const { account, accessToken, expiresOn } = result;
 

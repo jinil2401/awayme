@@ -17,7 +17,8 @@ export default function FillCalendar() {
   const router = useRouter();
   const { calendars } = useCalendarContext();
   const { user } = useUserContext();
-  const [events, setEvents] = useState([]);
+  const [computedEvents, setComputedEvents] = useState([]);
+  const [userEvents, setUserEvents] = useState([]);
   const [selectedCalendar, setSelectedCalendar] = useState<ICalendar>(
     calendars[0]
   );
@@ -30,32 +31,32 @@ export default function FillCalendar() {
     apiError: "",
   });
 
-  useEffect(() => {
-    async function fetchComputedEvents() {
-      setIsFetchingComputedEventsLoading(true);
-      try {
-        const response = await fetchData("/api/compute-free-events");
-        const { data } = response;
-        setEvents(data);
-      } catch (err: any) {
-        setError((error) => ({
-          ...error,
-          apiError: err.message,
-        }));
-      } finally {
-        setIsFetchingComputedEventsLoading(false);
-      }
+  async function fetchComputedEvents() {
+    setFetchEvents(true);
+    setIsFetchingComputedEventsLoading(true);
+    try {
+      const response = await fetchData(
+        `/api/compute-free-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}`
+      );
+      const { data } = response;
+      setUserEvents(data?.events);
+      setComputedEvents(data?.computedEvents);
+    } catch (err: any) {
+      setError((error) => ({
+        ...error,
+        apiError: err.message,
+      }));
+    } finally {
+      setIsFetchingComputedEventsLoading(false);
     }
-
-    fetchComputedEvents();
-  }, []);
+  }
 
   async function onFillCalendar() {
     try {
       setIsFillingCalendarLoading(true);
       const response = await await postData(`/api/fill-calendar`, {
         userId: user?._id,
-        events,
+        events: computedEvents,
         calendarId: selectedCalendar._id,
       });
       const { data } = response;
@@ -103,12 +104,23 @@ export default function FillCalendar() {
           </div>
           <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
             <MyCalendar
-              events={events?.map((event: any) => ({
-                id: event?.id,
-                title: event?.summary,
-                start: new Date(event?.start?.dateTime),
-                end: new Date(event?.end?.dateTime),
-              }))}
+              events={[
+                ...userEvents?.map((event: any) => ({
+                  ...event,
+                  title: event.summary,
+                  start: new Date(event?.start?.dateTime),
+                  end: new Date(event?.end?.dateTime),
+                })),
+                ...computedEvents?.map((event: any) => ({
+                  ...event,
+                  title: event.summary,
+                  start: new Date(event?.start?.dateTime),
+                  end: new Date(event?.end?.dateTime),
+                  data: {
+                    type: "multi-calendar",
+                  },
+                })),
+              ]}
             />
           </div>
         </div>
@@ -127,7 +139,7 @@ export default function FillCalendar() {
           isLoading={isFetchingComputedEventsLoading}
           buttonText="Confirm"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-          onClick={() => setFetchEvents(true)}
+          onClick={() => fetchComputedEvents()}
         />
       </div>
     );
@@ -175,7 +187,17 @@ export default function FillCalendar() {
                 }}
               />
             </div>
-            {error.apiError && <ApiError errorMessage={error.apiError} />}
+            {error.apiError && (
+              <ApiError
+                message={error.apiError}
+                setMessage={(value) =>
+                  setError((error) => ({
+                    ...error,
+                    apiError: value,
+                  }))
+                }
+              />
+            )}
             {renderButtonState()}
           </div>
         </div>

@@ -12,6 +12,12 @@ export interface IUser {
   verifyToken?: string;
   verifyTokenExpire?: Date;
   numberOfRetries?: number;
+  plan: {
+    _id: string;
+    planId: string;
+    name: string;
+    numberOfCalendarsAllowed: number
+  };
 }
 
 const INITIAL_STATE: IUser = {
@@ -20,6 +26,12 @@ const INITIAL_STATE: IUser = {
   lastName: "",
   email: "",
   isVerified: false,
+  plan: {
+    _id: "",
+    planId: "",
+    name: "",
+    numberOfCalendarsAllowed: 0,
+  }
 };
 
 const Context = createContext<{
@@ -34,7 +46,7 @@ const Context = createContext<{
   setToggleFetchUserDetails: () => {},
 });
 
-const authPathNames = ["/login", "/register"]
+const authPathNames = ["/login", "/register"];
 
 export function UserContext({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -51,8 +63,7 @@ export function UserContext({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetchData(`/api/users/${userId}`);
         const { data } = response;
-        console.log("pathname", pathname);
-        if(!data?.isVerified && !authPathNames.includes(pathname)) {
+        if (!data?.isVerified && !authPathNames.includes(pathname)) {
           router.push("/email-not-verified");
         }
         setUser(data);

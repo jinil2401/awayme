@@ -15,7 +15,7 @@ interface IEventTypes {
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
-const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
+export const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   const calendar = googleClient({
     accessToken,
     refreshToken,
@@ -35,7 +35,7 @@ const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   // format the events for the calendar component
   const events = response?.map((eventData: any) => ({
     id: eventData?.id,
-    title: eventData?.summary,
+    summary: eventData?.summary,
     start: eventData?.start,
     end: eventData?.end,
   }));
@@ -44,7 +44,7 @@ const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
   return events;
 };
 
-const getMicrosoftEvents = async ({
+export const getMicrosoftEvents = async ({
   accessToken,
   refreshToken,
 }: IEventTypes) => {

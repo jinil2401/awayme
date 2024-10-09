@@ -76,7 +76,10 @@ export default function Calendars() {
             calendar?.provider?.toLowerCase() ===
             CalendarTypes.GOOGLE.toLowerCase();
           return (
-            <div key={calendar._id} className="w-[255px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6">
+            <div
+              key={calendar._id}
+              className="w-[255px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6"
+            >
               <img
                 src={`${
                   isCalendarGoogle ? "/google-icon.png" : "/outlook-icon.png"
@@ -122,7 +125,17 @@ export default function Calendars() {
       <div className="flex-1 h-screen overflow-auto">
         <TopBar />
         <div className="px-8 py-4">
-          {error.apiError && <ApiError errorMessage={error.apiError} />}
+          {error.apiError && (
+            <ApiError
+              message={error.apiError}
+              setMessage={(value) =>
+                setError((error) => ({
+                  ...error,
+                  apiError: value,
+                }))
+              }
+            />
+          )}
           {successDeleteMessage && (
             <ApiSuccess
               message={successDeleteMessage}

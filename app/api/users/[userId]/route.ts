@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connect from "@/lib/db";
 import User from "@/lib/models/user";
 import { Types } from "mongoose";
+import Plan from "@/lib/models/plan";
 
 // get user details api
 export const GET = async (request: Request, context: { params: any }) => {
@@ -19,8 +20,14 @@ export const GET = async (request: Request, context: { params: any }) => {
     // establish the database connection
     await connect();
 
+    // load all plans
+    await Plan.find({});
+
     // get user details from userID
-    let user = await User.findById(userId);
+    let user = await User.findById(userId).populate({
+      path: "plan",
+      select: ["_id", "planId", "name", "numberOfCalendarsAllowed"],
+    });
 
     if (!user) {
       return new NextResponse(

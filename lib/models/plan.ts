@@ -13,6 +13,9 @@ const PlanSchema = new Schema(
     features: {
       type: Array<string>,
     },
+    numberOfCalendarsAllowed: {
+      type: Number,
+    },
     price: {
       type: String,
     },

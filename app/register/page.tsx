@@ -146,7 +146,7 @@ export default function Register() {
         />
         <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/20">
           <h1 className="font-archivo text-3xl leading-[56px] font-bold text-heading">
-            {"Let\'s Get Started 🚀"}
+            {"Let's Get Started 🚀"}
           </h1>
           <p className="font-archivo text-lg leading-[36px] text-subHeading">
             Create an account
@@ -202,18 +202,29 @@ export default function Register() {
               error={error.passwordError}
               disabled={isLoading}
             />
-            {error.apiError && <ApiError errorMessage={error.apiError} />}
-            <Button
-                buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white w-[250px] justify-center mx-auto my-6"
-                buttonText="Sign Up"
-                isDisabled={isLoading}
-                isLoading={isLoading}
-                onClick={() => handleSignUp()}
+            {error.apiError && (
+              <ApiError
+                message={error.apiError}
+                setMessage={(value) =>
+                  setError((error) => ({
+                    ...error,
+                    apiError: value,
+                  }))
+                }
               />
+            )}
+            <Button
+              buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white w-[250px] justify-center mx-auto my-6"
+              buttonText="Sign Up"
+              isDisabled={isLoading}
+              isLoading={isLoading}
+              onClick={() => handleSignUp()}
+            />
           </form>
           <div className="py-6">
             <p className="text-subHeading text-md text-center leading-[24px]">
-              By continuing you agree to our<br />
+              By continuing you agree to our
+              <br />
               <span className="text-accent">
                 <Link
                   href={"https://awayme.cc/awayme-terms-and-conditions/"}

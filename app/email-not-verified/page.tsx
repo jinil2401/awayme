@@ -68,7 +68,17 @@ export default function EmailNotVerified() {
         )}
         {error.apiError && (
           <div className="flex justify-center">
-            <ApiError errorMessage={error.apiError} />
+            {error.apiError && (
+              <ApiError
+                message={error.apiError}
+                setMessage={(value) =>
+                  setError((error) => ({
+                    ...error,
+                    apiError: value,
+                  }))
+                }
+              />
+            )}
           </div>
         )}
         {successMessage && (

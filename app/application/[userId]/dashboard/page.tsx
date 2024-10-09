@@ -11,6 +11,7 @@ import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import { useRouter } from "next/navigation";
 import { fetchData } from "@/utils/fetch";
 import MyCalendar from "@/app/components/calendar";
+import { isPaidUser } from "@/utils/checkProtectedRoutes";
 
 export default function Dashboard() {
   const { user } = useUserContext();
@@ -34,7 +35,7 @@ export default function Dashboard() {
         const { data } = response;
         const events = data?.map((eventData: any) => ({
           id: eventData?.id,
-          title: eventData?.title,
+          title: eventData?.summary,
           start: new Date(eventData?.start?.dateTime),
           end: new Date(eventData?.end?.dateTime),
         }));
@@ -111,16 +112,18 @@ export default function Dashboard() {
                       )
                     }
                   />
-                  <Button
-                    isDisabled={calendars.length < 2}
-                    buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-                    buttonText="Merge Calendar"
-                    onClick={() =>
-                      router.push(
-                        `/application/${user?._id}/dashboard/merge-calendar`
-                      )
-                    }
-                  />
+                  {isPaidUser(user) && (
+                    <Button
+                      isDisabled={calendars.length < 2}
+                      buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
+                      buttonText="Merge Calendar"
+                      onClick={() =>
+                        router.push(
+                          `/application/${user?._id}/dashboard/merge-calendar`
+                        )
+                      }
+                    />
+                  )}
                 </div>
               </div>
               <div className="flex flex-col pb-8">
@@ -152,7 +155,17 @@ export default function Dashboard() {
                     error={error.calendarNameError}
                   />
                 </div>
-                {error.apiError && <ApiError errorMessage={error.apiError} />}
+                {error.apiError && (
+                  <ApiError
+                    message={error.apiError}
+                    setMessage={(value) =>
+                      setError((error) => ({
+                        ...error,
+                        apiError: value,
+                      }))
+                    }
+                  />
+                )}
                 <div className="mt-4">
                   {loading ? (
                     <p className="text-lg leading-[36px] text-subHeading">

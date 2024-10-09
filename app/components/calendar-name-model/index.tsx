@@ -6,6 +6,7 @@ import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import CloseSvg from "../svg/Close";
 import Button from "../button";
 import { postData } from "@/utils/fetch";
+import { useCalendarContext } from "@/context/calendarContext";
 
 export default function CalendarNameModel({
   accountType,
@@ -16,6 +17,8 @@ export default function CalendarNameModel({
   onCancel: () => void;
   onConfirm: (accountType: string) => void;
 }) {
+  const { user } = useUserContext();
+  const { calendars } = useCalendarContext();
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState({
@@ -23,16 +26,15 @@ export default function CalendarNameModel({
     apiError: "",
   });
 
-
   async function handleAddCalendarName() {
-    if(name === ""){
-        setError({...error, nameError: "Please enter a calendar name" });
-        return;
+    if (name === "") {
+      setError({ ...error, nameError: "Please enter a calendar name" });
+      return;
     }
     setIsLoading(true);
     try {
       const response = await postData("/api/store-calendar-name-in-cookies", {
-        name
+        name,
       });
       const { data } = response;
       if (data) {
@@ -47,6 +49,10 @@ export default function CalendarNameModel({
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function hasMaxLimitReached() {
+    return calendars.length >= user?.plan?.numberOfCalendarsAllowed;
   }
 
   return (
@@ -75,7 +81,7 @@ export default function CalendarNameModel({
             onChange={(event) => setName(event.target.value)}
             hasError={error.nameError !== ""}
             error={error.nameError}
-            disabled={isLoading}
+            disabled={isLoading || hasMaxLimitReached()}
           />
         </div>
         <div className="my-2">
@@ -84,6 +90,12 @@ export default function CalendarNameModel({
             {capitalizeFirstLetter(accountType)}
           </p>
         </div>
+        {hasMaxLimitReached() && (
+          <p className="text-error text-sm font-medium py-2">
+            You have reached the max number of calendar imports. Please upgrade
+            your plan to import more calendars!
+          </p>
+        )}
         <div className="mt-8 mb-2 flex items-center justify-center gap-4">
           <Button
             isDisabled={isLoading}
@@ -92,7 +104,7 @@ export default function CalendarNameModel({
             onClick={() => onCancel()}
           />
           <Button
-            isDisabled={isLoading}
+            isDisabled={isLoading || hasMaxLimitReached()}
             isLoading={isLoading}
             buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
             buttonText="Confirm"

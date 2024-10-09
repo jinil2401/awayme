@@ -38,7 +38,7 @@ export default function MergeCalendar() {
       const { data } = response;
       const events = data?.map((eventData: any) => ({
         id: eventData?.id,
-        title: eventData?.title,
+        title: eventData?.summary,
         start: new Date(eventData?.start?.dateTime),
         end: new Date(eventData?.end?.dateTime),
       }));
@@ -59,7 +59,7 @@ export default function MergeCalendar() {
       const { data } = response;
       const events = data?.map((eventData: any) => ({
         id: eventData?.id,
-        title: eventData?.title,
+        title: eventData?.summary,
         start: new Date(eventData?.start?.dateTime),
         end: new Date(eventData?.end?.dateTime),
         data: {
@@ -203,7 +203,17 @@ export default function MergeCalendar() {
                 }}
               />
             </div>
-            {error.apiError && <ApiError errorMessage={error.apiError} />}
+            {error.apiError && (
+            <ApiError
+              message={error.apiError}
+              setMessage={(value) =>
+                setError((error) => ({
+                  ...error,
+                  apiError: value,
+                }))
+              }
+            />
+          )}
             {renderButtonState()}
           </div>
         </div>

@@ -59,7 +59,10 @@ const authOptions: NextAuthOptions = {
         await connect();
 
         // check if the store exists in the database
-        const selectedUser = await User.findById(userData._id);
+        const selectedUser = await User.findById(userData._id).populate({
+          path: "plan",
+          select: ["_id", "planId", "name", "numberOfCalendarsAllowed"],
+        });
         if (!selectedUser) {
           false;
         }
@@ -76,6 +79,21 @@ const authOptions: NextAuthOptions = {
           cookieStore.delete("calendarName");
           // throw an error stating that the calendar is already in the database
           throw new Error("user calendar is already imported!");
+        }
+
+        // fetch all the calendars of the user
+        const calendars = await Calendar.find({
+          user: new Types.ObjectId(selectedUser._id),
+        });
+        
+        // check if the user is allowed to import the calendar based on the plan
+        if (calendars.length >= selectedUser?.plan?.numberOfCalendarsAllowed) {
+          // delete the calendar name from the cookies
+          cookieStore.delete("calendarName");
+          // throw an error stating that user does not enough credits to import
+          throw new Error(
+            "user does not have enough credits to import this calendar. Please upgrade your plan to import more calendars!"
+          );
         }
 
         // extract the access and the refresh token

@@ -44,7 +44,17 @@ export default function TopBar() {
       </h2>
       <div className="ml-auto">
         <>
-          {error.apiError && <ApiError errorMessage={error.apiError} />}
+          {error.apiError && (
+            <ApiError
+              message={error.apiError}
+              setMessage={(value) =>
+                setError((error) => ({
+                  ...error,
+                  apiError: value,
+                }))
+              }
+            />
+          )}
           {isLoading ? (
             <div className="py-2">
               <p>Loging you out!</p>
