@@ -1,94 +1,82 @@
 "use client";
-import Dropdown from "@/app/components/dropdown";
-import Sidebar from "@/app/components/sidebar";
-import TopBar from "@/app/components/topbar";
-import { useCalendarContext } from "@/context/calendarContext";
-import { useUserContext } from "@/context/userContext";
-import Link from "next/link";
-import React, { useEffect, useState } from "react";
-import { ICalendar } from "../../calendars/interface";
-import { fetchData } from "@/utils/fetch";
 import ApiError from "@/app/components/api-error";
 import Button from "@/app/components/button";
-import { useRouter } from "next/navigation";
 import MyCalendar from "@/app/components/calendar";
+import Sidebar from "@/app/components/sidebar";
+import TopBar from "@/app/components/topbar";
+import { useUserContext } from "@/context/userContext";
+import { fetchData, postData } from "@/utils/fetch";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { ICalendar } from "../../calendars/interface";
+import { useCalendarContext } from "@/context/calendarContext";
+import Dropdown from "@/app/components/dropdown";
 
 export default function FillCalendar() {
   const router = useRouter();
-  const { user } = useUserContext();
   const { calendars } = useCalendarContext();
-  const [sourceCalendar, setSourceCalendar] = useState<ICalendar>(calendars[0]);
-  const [destinationCalendar, setDestinationCalendar] = useState<ICalendar>(
-    calendars[1]
+  const { user } = useUserContext();
+  const [events, setEvents] = useState([]);
+  const [selectedCalendar, setSelectedCalendar] = useState<ICalendar>(
+    calendars[0]
   );
   const [fetchEvents, setFetchEvents] = useState(false);
-  const [sourceEvents, setSourceEvents] = useState<any>([]);
-  const [destinationEvents, setDestinationEvents] = useState<any>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingComputedEventsLoading, setIsFetchingComputedEventsLoading] =
+    useState(false);
+  const [isFillingCalendarLoading, setIsFillingCalendarLoading] =
+    useState(false);
   const [error, setError] = useState({
     apiError: "",
   });
 
-  const fetchSourceEvents = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetchData(
-        `/api/calendar-events?calendarId=${sourceCalendar?._id}&userId=${user?._id}`
-      );
-      const { data } = response;
-      const events = data?.map((eventData: any) => ({
-        id: eventData?.id,
-        title: eventData?.title,
-        start: new Date(eventData?.start?.dateTime),
-        end: new Date(eventData?.end?.dateTime),
-      }));
-      setSourceEvents(events);
-    } catch (err: any) {
-      setError((error) => ({
-        ...error,
-        apiError: err.message,
-      }));
+  useEffect(() => {
+    async function fetchComputedEvents() {
+      setIsFetchingComputedEventsLoading(true);
+      try {
+        const response = await fetchData("/api/compute-free-events");
+        const { data } = response;
+        setEvents(data);
+      } catch (err: any) {
+        setError((error) => ({
+          ...error,
+          apiError: err.message,
+        }));
+      } finally {
+        setIsFetchingComputedEventsLoading(false);
+      }
     }
-  };
 
-  const fetchDestinationEvents = async () => {
+    fetchComputedEvents();
+  }, []);
+
+  async function onFillCalendar() {
     try {
-      const response = await fetchData(
-        `/api/calendar-events?calendarId=${destinationCalendar?._id}&userId=${user?._id}`
-      );
+      setIsFillingCalendarLoading(true);
+      const response = await await postData(`/api/fill-calendar`, {
+        userId: user?._id,
+        events,
+        calendarId: selectedCalendar._id,
+      });
       const { data } = response;
-      const events = data?.map((eventData: any) => ({
-        id: eventData?.id,
-        title: eventData?.title,
-        start: new Date(eventData?.start?.dateTime),
-        end: new Date(eventData?.end?.dateTime),
-        data: {
-          type: "multi-calendar",
-        },
-      }));
-      setDestinationEvents(events);
+      const { message } = data;
+      console.log(message);
+      router.push(`/application/${user?._id}/dashboard`);
     } catch (err: any) {
       setError((error) => ({
         ...error,
         apiError: err.message,
       }));
     } finally {
-      setIsLoading(false);
+      setIsFillingCalendarLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (fetchEvents) {
-      fetchSourceEvents();
-      fetchDestinationEvents();
-    }
-  }, [fetchEvents]);
+  }
 
   function renderButtonState() {
-    if (isLoading) {
+    if (isFetchingComputedEventsLoading) {
       return (
         <div className="text-heading text-lg mt-4">
-          Fetching your calendar events
+          Fetching computed events...
         </div>
       );
     }
@@ -96,28 +84,32 @@ export default function FillCalendar() {
       return (
         <div className="flex flex-col gap-8 mt-4">
           <div className="text-subHeading text-lg">
-            Please confirm the events you want to transfer from the source
-            calendar to the destination calendar.
+            Please confirm the events you want to create.
           </div>
           <div className="flex items-center gap-8">
             <Button
+              isDisabled={isFillingCalendarLoading}
               buttonText="Cancel"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
               onClick={() => setFetchEvents(false)}
             />
             <Button
+              isDisabled={isFillingCalendarLoading}
+              isLoading={isFillingCalendarLoading}
               buttonText="Confirm"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-              onClick={() => {
-                console.log(
-                  "I will fill the destination canlendar with source events..."
-                );
-                setFetchEvents(false);
-              }}
+              onClick={() => onFillCalendar()}
             />
           </div>
           <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
-            <MyCalendar events={[...sourceEvents, ...destinationEvents]} />
+            <MyCalendar
+              events={events?.map((event: any) => ({
+                id: event?.id,
+                title: event?.summary,
+                start: new Date(event?.start?.dateTime),
+                end: new Date(event?.end?.dateTime),
+              }))}
+            />
           </div>
         </div>
       );
@@ -125,11 +117,14 @@ export default function FillCalendar() {
     return (
       <div className="flex items-center gap-8 mt-4">
         <Button
+          isDisabled={isFetchingComputedEventsLoading}
           buttonText="Cancel"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
           onClick={() => router.push(`/application/${user?._id}/dashboard`)}
         />
         <Button
+          isDisabled={isFetchingComputedEventsLoading}
+          isLoading={isFetchingComputedEventsLoading}
           buttonText="Confirm"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
           onClick={() => setFetchEvents(true)}
@@ -157,49 +152,26 @@ export default function FillCalendar() {
               Fill Calendar
             </h3>
             <p className="text-lg leading-[36px] text-subHeading">
-              Select the source and the designation calendar. All the events
-              from source will be merged into the destination calendar
+              Select the Calendar to fill.
             </p>
             <div className="flex items-center gap-8 mt-4">
               <Dropdown
                 isDisabled={fetchEvents}
-                id="sourceCalendar"
-                label="Select Source Calendar"
+                id="calendar"
+                label="Select Calendar"
                 onClick={(value) => {
                   const calendar: any = calendars.find(
                     (calendar) => calendar?._id === value?.id
                   );
-                  setSourceCalendar(calendar);
+                  setSelectedCalendar(calendar);
                 }}
                 options={calendars?.map(({ _id = "", name = "" }) => ({
                   id: _id,
                   name,
                 }))}
                 selectedOption={{
-                  id: sourceCalendar?._id || "",
-                  name: sourceCalendar?.name || "",
-                }}
-              />
-              <img src="/arrow-right.svg" alt="Arrow Right svg" />
-              <Dropdown
-                isDisabled={fetchEvents}
-                id="destinationCalendar"
-                label="Select Destination Calendar"
-                onClick={(value) => {
-                  const calendar: any = calendars.find(
-                    (calendar) => calendar?._id === value?.id
-                  );
-                  setDestinationCalendar(calendar);
-                }}
-                options={calendars
-                  ?.filter((calendar) => calendar._id !== sourceCalendar?._id)
-                  ?.map(({ _id = "", name = "" }) => ({
-                    id: _id,
-                    name,
-                  }))}
-                selectedOption={{
-                  id: destinationCalendar?._id || "",
-                  name: destinationCalendar?.name || "",
+                  id: selectedCalendar?._id || "",
+                  name: selectedCalendar?.name || "",
                 }}
               />
             </div>

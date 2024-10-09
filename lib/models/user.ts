@@ -30,6 +30,9 @@ const UserSchema = new Schema(
     verifyTokenExpire: {
       type: Date,
     },
+    nextCalendarUpdateDate: {
+      type: Date,
+    },
     plan: {
       type: Schema.Types.ObjectId,
       ref: "Plan",

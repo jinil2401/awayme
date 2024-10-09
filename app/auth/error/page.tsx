@@ -1,14 +1,20 @@
-"use client"
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import CustomErrorPage from "./error";
 
-const CustomErrorPage = () => {
-    const searchParams = useSearchParams();
+// This component passed as a fallback to the Suspense boundary
+// will be rendered in place of the search bar in the initial HTML.
+// When the value is available during React hydration the fallback
+// will be replaced with the `<SearchBar>` component.
+function SearchBarFallback() {
+  return <p>placeholder</p>;
+}
+
+export default function Page() {
   return (
-    <div>
-      <h1>Error: {searchParams.get("error")}</h1>
-      {/* handle the error message accordingly */}
-    </div>
+    <>
+      <Suspense fallback={<SearchBarFallback />}>
+        <CustomErrorPage />
+      </Suspense>
+    </>
   );
-};
-
-export default CustomErrorPage;
+}

@@ -1,9 +1,8 @@
 import NextAuth from "next-auth";
-import * as bcrypt from "bcryptjs";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
 
-import { AuthOptions, Session } from "next-auth";
+import { NextAuthOptions, Session } from "next-auth";
 import { cookies } from "next/headers";
 import connect from "@/lib/db";
 import User from "@/lib/models/user";
@@ -18,7 +17,7 @@ const microsoftClientId = process.env.AZURE_AD_CLIENT_ID || "";
 const microsoftClientSecret = process.env.AZURE_AD_CLIENT_SECRET || "";
 const microsoftTenantId = process.env.AZURE_AD_TENANT_ID || "";
 
-export const authOptions: AuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: googleClientId,
@@ -128,5 +127,5 @@ export interface EnrichedSession extends Session {
   refreshToken: string;
 }
 
-export const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

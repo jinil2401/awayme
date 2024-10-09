@@ -101,14 +101,23 @@ export default function Dashboard() {
                   A detailed view of your calendar events. You can switch
                   between your calendars here
                 </p>
-                <div className="flex mt-6">
+                <div className="flex items-center gap-8 mt-6">
                   <Button
-                    isDisabled={calendars.length < 2}
                     buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
                     buttonText="Fill Calendar"
                     onClick={() =>
                       router.push(
                         `/application/${user?._id}/dashboard/fill-calendar`
+                      )
+                    }
+                  />
+                  <Button
+                    isDisabled={calendars.length < 2}
+                    buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
+                    buttonText="Merge Calendar"
+                    onClick={() =>
+                      router.push(
+                        `/application/${user?._id}/dashboard/merge-calendar`
                       )
                     }
                   />

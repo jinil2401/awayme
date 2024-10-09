@@ -76,7 +76,7 @@ export default function Calendars() {
             calendar?.provider?.toLowerCase() ===
             CalendarTypes.GOOGLE.toLowerCase();
           return (
-            <div className="w-[255px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6">
+            <div key={calendar._id} className="w-[255px] bg-white border border-stroke/20 rounded-[12px] shadow-card flex flex-col gap-6 px-4 py-6">
               <img
                 src={`${
                   isCalendarGoogle ? "/google-icon.png" : "/outlook-icon.png"

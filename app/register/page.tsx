@@ -146,7 +146,7 @@ export default function Register() {
         />
         <div className="w-[500px] shadow-card p-8 rounded-[12px] border border-stroke/20">
           <h1 className="font-archivo text-3xl leading-[56px] font-bold text-heading">
-            Let's Get Started 🚀
+            {"Let\'s Get Started 🚀"}
           </h1>
           <p className="font-archivo text-lg leading-[36px] text-subHeading">
             Create an account
