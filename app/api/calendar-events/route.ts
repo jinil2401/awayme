@@ -8,14 +8,16 @@ import { CalendarTypes } from "@/constants/calendarTypes";
 import axios from "axios";
 import { msalConfig } from "@/lib/microsoftClient";
 import { ConfidentialClientApplication } from "@azure/msal-node";
+import { convertUtcToLocal } from "@/utils/time";
 interface IEventTypes {
   accessToken: string;
   refreshToken: string;
+  maxTime: string;
 }
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
-export const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes) => {
+export const getGoogleEvents = async ({ accessToken, refreshToken, maxTime }: IEventTypes) => {
   const calendar = googleClient({
     accessToken,
     refreshToken,
@@ -24,7 +26,7 @@ export const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes
   const res = await calendar.events.list({
     calendarId: "primary",
     timeMin: new Date().toISOString(),
-    maxResults: 100,
+    timeMax: maxTime,
     singleEvents: true,
     orderBy: "startTime",
   });
@@ -47,9 +49,10 @@ export const getGoogleEvents = async ({ accessToken, refreshToken }: IEventTypes
 export const getMicrosoftEvents = async ({
   accessToken,
   refreshToken,
+  maxTime
 }: IEventTypes) => {
   const calendarResponse = await axios.get(
-    "https://graph.microsoft.com/v1.0/me/events?$top=100&$expand=instances",
+    `https://graph.microsoft.com/v1.0/me/events?$expand=instances&$filter=start/dateTime le '${maxTime}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -61,12 +64,24 @@ export const getMicrosoftEvents = async ({
   const response = calendarResponse.data.value;
 
   // format the events for the calendar component
-  const events = response?.map((eventData: any) => ({
-    id: eventData?.id,
-    title: eventData?.subject,
-    start: eventData?.start,
-    end: eventData?.end,
-  }));
+  const events = response?.map((eventData: any) => {
+    // convert the timezone to the user's local time
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const start = {
+      dateTime: convertUtcToLocal(eventData?.start?.dateTime, timezone),
+      timeZone: timezone,
+    }
+    const end = {
+      dateTime: convertUtcToLocal(eventData?.end?.dateTime, timezone),
+      timeZone: timezone,
+    }
+    return {
+      id: eventData?.id,
+      summary: eventData?.subject,
+      start,
+      end,
+    }
+  });
 
   // return the events
   return events;
@@ -76,8 +91,16 @@ export const getMicrosoftEvents = async ({
 export async function GET(request: Request) {
   // extract the store id from the search params
   const { searchParams } = new URL(request.url);
-  const calendarId = searchParams.get("calendarId");
-  const userId = searchParams.get("userId");
+  const calendarId = searchParams.get("calendarId") as string;
+  const userId = searchParams.get("userId") as string;
+  const maxTime = searchParams.get("maxTime") as string;
+
+  if (!maxTime) {
+    return new NextResponse(
+      JSON.stringify({ message: "Missing maxTime!" }),
+      { status: 400 }
+    );
+  }
 
   // check if the calendarId exist and is valid
   if (!calendarId || !Types.ObjectId.isValid(calendarId)) {
@@ -132,7 +155,7 @@ export async function GET(request: Request) {
     const accessToken = decrypt(access_token);
     const refreshToken = decrypt(refresh_token);
     // pass it to the function
-    events = await getGoogleEvents({ accessToken, refreshToken });
+    events = await getGoogleEvents({ accessToken, refreshToken, maxTime });
   } else if (
     calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
   ) {
@@ -163,7 +186,7 @@ export async function GET(request: Request) {
       await calendar.save();
     }
     // pass it to the function
-    events = await getMicrosoftEvents({ accessToken, refreshToken });
+    events = await getMicrosoftEvents({ accessToken, refreshToken, maxTime });
   }
 
   return new NextResponse(

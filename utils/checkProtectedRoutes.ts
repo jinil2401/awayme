@@ -9,5 +9,5 @@ export function isRouteProtected(url: string) {
 }
 
 export function isPaidUser(user: IUser) {
-  return user.plan.planId.toLowerCase() !== PlanTypes.FREE.toLowerCase();
+  return user?.plan?.planId?.toLowerCase() !== PlanTypes.FREE.toLowerCase();
 }

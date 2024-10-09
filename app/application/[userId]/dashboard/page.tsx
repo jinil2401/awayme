@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { fetchData } from "@/utils/fetch";
 import MyCalendar from "@/app/components/calendar";
 import { isPaidUser } from "@/utils/checkProtectedRoutes";
+import { getFourMonthsLaterDate, getTwoWeeksLaterDate } from "@/utils/time";
 
 export default function Dashboard() {
   const { user } = useUserContext();
@@ -29,8 +30,10 @@ export default function Dashboard() {
     async function fetchAllEvents() {
       setLoading(true);
       try {
+        // compute maxTime based on user plan
+        const maxTime = isPaidUser(user) ? getFourMonthsLaterDate() : getTwoWeeksLaterDate();
         const response = await fetchData(
-          `/api/calendar-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}`
+          `/api/calendar-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
         );
         const { data } = response;
         const events = data?.map((eventData: any) => ({
@@ -168,7 +171,7 @@ export default function Dashboard() {
                 )}
                 <div className="mt-4">
                   {loading ? (
-                    <p className="text-lg leading-[36px] text-subHeading">
+                    <p className="text-lg leading-[36px] text-heading">
                       Fetching calendar events for {selectedCalendar?.name}
                     </p>
                   ) : (

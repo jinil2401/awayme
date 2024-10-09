@@ -12,6 +12,8 @@ import React, { useEffect, useState } from "react";
 import { ICalendar } from "../../calendars/interface";
 import { useCalendarContext } from "@/context/calendarContext";
 import Dropdown from "@/app/components/dropdown";
+import { isPaidUser } from "@/utils/checkProtectedRoutes";
+import { getFourMonthsLaterDate, getTwoWeeksLaterDate } from "@/utils/time";
 
 export default function FillCalendar() {
   const router = useRouter();
@@ -35,8 +37,10 @@ export default function FillCalendar() {
     setFetchEvents(true);
     setIsFetchingComputedEventsLoading(true);
     try {
+      // compute maxTime based on user plan
+      const maxTime = isPaidUser(user) ? getFourMonthsLaterDate() : getTwoWeeksLaterDate();
       const response = await fetchData(
-        `/api/compute-free-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}`
+        `/api/compute-free-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
       );
       const { data } = response;
       setUserEvents(data?.events);
@@ -58,6 +62,7 @@ export default function FillCalendar() {
         userId: user?._id,
         events: computedEvents,
         calendarId: selectedCalendar._id,
+        isPaidUser: isPaidUser(user),
       });
       const { data } = response;
       const { message } = data;

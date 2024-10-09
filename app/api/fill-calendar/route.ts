@@ -3,10 +3,13 @@ import connect from "@/lib/db";
 import googleClient from "@/lib/googleClient";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
-import { decrypt } from "@/utils/crypto";
+import { decrypt, encrypt } from "@/utils/crypto";
 import moment from "moment";
 import { Types } from "mongoose";
 import { NextResponse } from "next/server";
+import axios from "axios";
+import { ConfidentialClientApplication } from "@azure/msal-node";
+import { msalConfig } from "@/lib/microsoftClient";
 
 interface IStoreEventTypes {
   accessToken: string;
@@ -14,32 +17,77 @@ interface IStoreEventTypes {
   events: any;
 }
 
-const storeGoogleEvents = async ({
+const cca = new ConfidentialClientApplication(msalConfig);
+
+async function storeGoogleEvents({
   events,
   accessToken,
   refreshToken,
-}: IStoreEventTypes) => {
+}: IStoreEventTypes) {
   const calendar = googleClient({
     accessToken,
     refreshToken,
   });
 
   try {
-    for (const event of events) {
-      await calendar.events.insert({
+    const promises = events.map((event: any) =>
+      calendar.events.insert({
         calendarId: "primary",
         requestBody: event,
-      });
-    }
-    return true;
+      })
+    );
+
+    const results = await Promise.allSettled(promises);
+
+    // Check if all promises were fulfilled
+    const allSuccessful = results.every(
+      (result) => result.status === "fulfilled"
+    );
+
+    return allSuccessful;
   } catch (err) {
-    console.error(err);
+    console.error("Error storing events:", err);
     return false;
   }
-};
+}
+
+async function storeOutlookEvents({
+  events,
+  accessToken,
+  refreshToken,
+}: IStoreEventTypes) {
+  const url = "https://graph.microsoft.com/v1.0/me/events";
+
+  try {
+    const promises = events.map(async (event: any) => {
+      const response = await axios.post(url, event, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.status === 200) {
+        return true;
+      }
+      return false
+    });
+
+    const results = await Promise.allSettled(promises);
+
+    // Check if all promises were fulfilled
+    const allSuccessful = results.every(
+      (result) => result.status === "fulfilled"
+    );
+
+    return allSuccessful;
+  } catch (err: any) {
+    console.error("Error storing events:", err.message);
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
-  const { events, userId, calendarId } = await request.json();
+  const { events, userId, calendarId, isPaidUser } = await request.json();
 
   // check if the userId exist and is valid
   if (!userId || !Types.ObjectId.isValid(userId)) {
@@ -115,43 +163,74 @@ export async function POST(request: Request) {
 
     // pass it to the function
     result = await storeGoogleEvents({ accessToken, refreshToken, events });
-  } else if (calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()) {
+  } else if (
+    calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
+  ) {
     // fetch the encrpted access token and refresh token
-    const { access_token, refresh_token } = calendar;
+    const { access_token, refresh_token, expires_at } = calendar;
+
+    const current_date = new Date().getTime();
+    const expires_at_time = new Date(expires_at).getTime();
 
     // decrypt the access token and refresh token
-    const accessToken = decrypt(access_token);
+    let accessToken = decrypt(access_token);
     const refreshToken = decrypt(refresh_token);
-    
-    console.log("add events for outlook");
-    // pass it to the function
-    // result = await storeGoogleEvents({ accessToken, refreshToken, events });
-  }
 
-  // 
+    if (expires_at_time < current_date) {
+      // fetch latest access token.
+      const result: any = await cca.acquireTokenByRefreshToken({
+        refreshToken: refreshToken,
+        scopes: ["User.Read", "Calendars.Read"],
+      });
+
+      // extract the name, email, access token and expiry from result
+      const { accessToken: access_token, expiresOn } = result;
+      accessToken = access_token;
+      const token = encrypt(access_token);
+
+      calendar.access_token = token;
+      calendar.expires_at = expiresOn;
+      await calendar.save();
+    }
+
+    // pass it to the function
+    result = await storeOutlookEvents({
+      accessToken,
+      refreshToken,
+      events: events?.map((event: any) => {
+        return {
+          start: event.start,
+          end: event.end,
+          subject: event.summary,
+        };
+      }),
+    });
+  }
 
   if (result) {
     try {
-      const twoWeeksLater = new Date(today);
-      twoWeeksLater.setDate(today.getDate() + 14);
-      // update the user account with nextUpdateDate timestamp
-      // this is needed because we will not allow to update if the current date
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: user._id },
-        {
-          nextCalendarUpdateDate: twoWeeksLater,
-        },
-        {
-          new: true,
-        }
-      );
-
-      // check if the process successed
-      if (!updatedUser) {
-        return new NextResponse(
-          JSON.stringify({ message: "User next calendar date not updated!" }),
-          { status: 400 }
+      if (!isPaidUser) {
+        const twoWeeksLater = new Date(today);
+        twoWeeksLater.setDate(today.getDate() + 14);
+        // update the user account with nextUpdateDate timestamp
+        // this is needed because we will not allow to update if the current date
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: user._id },
+          {
+            nextCalendarUpdateDate: twoWeeksLater,
+          },
+          {
+            new: true,
+          }
         );
+
+        // check if the process successed
+        if (!updatedUser) {
+          return new NextResponse(
+            JSON.stringify({ message: "User next calendar date not updated!" }),
+            { status: 400 }
+          );
+        }
       }
 
       return new NextResponse(

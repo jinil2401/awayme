@@ -13,6 +13,7 @@ import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import ApiSuccess from "@/app/components/api-success";
 import DeleteModal from "@/app/components/delete-modal";
 import { useCalendarContext } from "@/context/calendarContext";
+import { isPaidUser } from "@/utils/checkProtectedRoutes";
 
 export default function Calendars() {
   const router = useRouter();
@@ -100,18 +101,20 @@ export default function Calendars() {
                   {capitalizeFirstLetter(calendar?.email || "")}
                 </p>
               </div>
-              <div className="mt-4 flex justify-center">
-                <Button
-                  buttonClassName="rounded-md hover:bg-error/20 bg-transparent text-error font-semibold"
-                  buttonText="Remove Calendar"
-                  onClick={() =>
-                    setDeleteModal({
-                      toggle: true,
-                      data: calendar,
-                    })
-                  }
-                />
-              </div>
+              {isPaidUser(user) && (
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    buttonClassName="rounded-md hover:bg-error/20 bg-transparent text-error font-semibold"
+                    buttonText="Remove Calendar"
+                    onClick={() =>
+                      setDeleteModal({
+                        toggle: true,
+                        data: calendar,
+                      })
+                    }
+                  />
+                </div>
+              )}
             </div>
           );
         })}

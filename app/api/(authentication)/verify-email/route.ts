@@ -37,6 +37,7 @@ export async function GET(reqeust: Request) {
     }
 
     user.isVerified = true;
+    user.numberOfRetries = undefined;
     user.verifyToken = undefined;
     user.verifyTokenExpire = undefined;
 

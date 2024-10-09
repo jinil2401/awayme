@@ -14,7 +14,7 @@ export default function ApiSuccess({
     setTimeout(() => {
       setDisplayClass("hidden");
       setMessage("");
-    }, 3000);
+    }, 5000);
   }, []);
   return (
     <p className={`text-success text-sm font-medium py-2 ${displayClass}`}>

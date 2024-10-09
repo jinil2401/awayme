@@ -12,8 +12,8 @@ const cca = new ConfidentialClientApplication(msalConfig);
 
 function findFreeSlots(events: any) {
   const busyTimes = events.map((event: any) => ({
-    start: new Date(event.start),
-    end: new Date(event.end),
+    start: new Date(event.start.dateTime),
+    end: new Date(event.end.dateTime),
   }));
 
   const freeSlots = [];
@@ -52,34 +52,39 @@ function findFreeSlots(events: any) {
       }
     }
   }
-
   return freeSlots;
 }
 
 function createRandomEvents({
-  freeSlots,
-  minDuration,
-  maxDuration,
-  percentage,
-  timeZone,
+    freeSlots,
+    minDuration,
+    maxDuration,
+    percentage,
+    timeZone,
 }: {
   freeSlots: any;
-  minDuration: any;
-  maxDuration: any;
-  percentage: any;
-  timeZone: any;
+  minDuration: number;
+  maxDuration: number;
+  percentage: number;
+  timeZone: string;
 }) {
-  const randomEvents = [];
+  const randomEvents: any = [];
 
-  const numberOfEvents = Math.floor(freeSlots.length * (percentage / 100));
+  // Calculate the number of events based on the percentage of free slots
+  const totalFreeSlots = freeSlots.length;
+  const numberOfEvents = Math.floor(totalFreeSlots * (percentage / 100));
+
+  if (numberOfEvents <= 0) {
+    return randomEvents;
+  }
 
   const shuffledSlots = freeSlots
-    .sort(() => 0.5 - Math.random())
+    .sort(() => 0.3 - Math.random())
     .slice(0, numberOfEvents);
 
   for (const slot of shuffledSlots) {
-    const randomDuration =
-      Math.floor(Math.random() * (maxDuration - minDuration + 1)) + minDuration;
+    const maxPossibleDuration = Math.min(maxDuration, (slot.end - slot.start) / (60 * 1000));
+    const randomDuration = Math.floor(Math.random() * (maxPossibleDuration - minDuration + 1)) + minDuration;
 
     const randomStartOffset = Math.floor(
       Math.random() * ((slot.end - slot.start) / (60 * 1000) - randomDuration)
@@ -102,12 +107,21 @@ function createRandomEvents({
   return randomEvents;
 }
 
+
 export async function GET(request: Request) {
   try {
     // extract the store id from the search params
     const { searchParams } = new URL(request.url);
     const calendarId = searchParams.get("calendarId");
     const userId = searchParams.get("userId");
+    const maxTime = searchParams.get("maxTime") as string;
+
+    if (!maxTime) {
+      return new NextResponse(
+        JSON.stringify({ message: "Missing maxTime!" }),
+        { status: 400 }
+      );
+    }
 
     // check if the calendarId exist and is valid
     if (!calendarId || !Types.ObjectId.isValid(calendarId)) {
@@ -164,7 +178,7 @@ export async function GET(request: Request) {
       const accessToken = decrypt(access_token);
       const refreshToken = decrypt(refresh_token);
       // pass it to the function
-      events = await getGoogleEvents({ accessToken, refreshToken });
+      events = await getGoogleEvents({ accessToken, refreshToken, maxTime });
     } else if (
       calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
     ) {
@@ -195,24 +209,25 @@ export async function GET(request: Request) {
         await calendar.save();
       }
       // pass it to the function
-      events = await getMicrosoftEvents({ accessToken, refreshToken });
+      events = await getMicrosoftEvents({ accessToken, refreshToken, maxTime });
     }
 
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; // Get user's timezone
-    const now = new Date();
-    const twoWeeksLater = new Date(now);
-    twoWeeksLater.setDate(now.getDate() + 14);
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; 
 
+    // fetch all the available free slots
     const freeSlots = findFreeSlots(events);
 
+    // set min and max duration of the event
     const minDuration = 60;
-    const maxDuration = 360;
+    const maxDuration = 480;
 
+    // compute the random events based on the free slots and desired percentage of events
     const computedEvents = createRandomEvents({
       freeSlots,
       minDuration,
       maxDuration,
-      percentage: 20,
+      // TODO: take this from api params
+      percentage: 25,
       timeZone,
     });
 
