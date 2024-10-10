@@ -149,7 +149,7 @@ export default function Calendars() {
             <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
               Calendars
             </h3>
-            <p className="text-lg leading-[36px] text-subHeading">
+            <p className="text-base leading-[24px] font-medium text-subHeading ">
               Here are all the calendars you have imported. You can add more
               calendars here.
             </p>

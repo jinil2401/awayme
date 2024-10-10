@@ -10,7 +10,7 @@ import { msalConfig } from "@/lib/microsoftClient";
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
-function findFreeSlots(events: any) {
+function findFreeSlots(events: any, endDate: Date) {
   const busyTimes = events.map((event: any) => ({
     start: new Date(event.start.dateTime),
     end: new Date(event.end.dateTime),
@@ -21,7 +21,7 @@ function findFreeSlots(events: any) {
 
   for (
     let d = new Date(now);
-    d <= new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    d <= endDate;
     d.setDate(d.getDate() + 1)
   ) {
     const day = d.getDay();
@@ -115,7 +115,10 @@ export async function GET(request: Request) {
     const calendarId = searchParams.get("calendarId");
     const userId = searchParams.get("userId");
     const maxTime = searchParams.get("maxTime") as string;
-
+    const percentage = parseFloat(searchParams.get("percentage") || "25");
+    const startDate = new Date(searchParams.get("startDate") || new Date().toISOString());
+    const endDate = new Date(searchParams.get("endDate") || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString());
+    
     if (!maxTime) {
       return new NextResponse(
         JSON.stringify({ message: "Missing maxTime!" }),
@@ -134,7 +137,7 @@ export async function GET(request: Request) {
     // check if the calendarId exist and is valid
     if (!userId || !Types.ObjectId.isValid(userId)) {
       return new NextResponse(
-        JSON.stringify({ message: "Invalid or missing calendarId!" }),
+        JSON.stringify({ message: "Invalid or missing userId!" }),
         { status: 400 }
       );
     }
@@ -215,7 +218,12 @@ export async function GET(request: Request) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; 
 
     // fetch all the available free slots
-    const freeSlots = findFreeSlots(events);
+    const freeSlots = findFreeSlots(events, endDate);
+
+    // Filter freeSlots based on the provided startDate and endDate
+    const filteredSlots = freeSlots.filter(slot => 
+      slot.start >= startDate && slot.end <= endDate
+    );
 
     // set min and max duration of the event
     const minDuration = 60;
@@ -223,11 +231,10 @@ export async function GET(request: Request) {
 
     // compute the random events based on the free slots and desired percentage of events
     const computedEvents = createRandomEvents({
-      freeSlots,
+      freeSlots: filteredSlots,
       minDuration,
       maxDuration,
-      // TODO: take this from api params
-      percentage: 25,
+      percentage,
       timeZone,
     });
 

@@ -7,11 +7,13 @@ import { useUserContext } from "@/context/userContext";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { ICalendar } from "../../calendars/interface";
-import { fetchData } from "@/utils/fetch";
+import { fetchData, postData } from "@/utils/fetch";
 import ApiError from "@/app/components/api-error";
 import Button from "@/app/components/button";
 import { useRouter } from "next/navigation";
 import MyCalendar from "@/app/components/calendar";
+import { isPaidUser } from "@/utils/checkProtectedRoutes";
+import { getFourMonthsLaterDate, getTwoWeeksLaterDate } from "@/utils/time";
 
 export default function MergeCalendar() {
   const router = useRouter();
@@ -25,48 +27,40 @@ export default function MergeCalendar() {
   const [sourceEvents, setSourceEvents] = useState<any>([]);
   const [destinationEvents, setDestinationEvents] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFillingCalendarLoading, setIsFillingCalendarLoading] =
+    useState(false);
   const [error, setError] = useState({
     apiError: "",
   });
 
-  const fetchSourceEvents = async () => {
+  // compute maxTime based on user plan
+  const maxTime = isPaidUser(user)
+    ? getFourMonthsLaterDate()
+    : getTwoWeeksLaterDate();
+
+  async function fetchSourceEvents() {
     setIsLoading(true);
     try {
       const response = await fetchData(
-        `/api/calendar-events?calendarId=${sourceCalendar?._id}&userId=${user?._id}`
+        `/api/calendar-events?calendarId=${sourceCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
       );
       const { data } = response;
-      const events = data?.map((eventData: any) => ({
-        id: eventData?.id,
-        title: eventData?.summary,
-        start: new Date(eventData?.start?.dateTime),
-        end: new Date(eventData?.end?.dateTime),
-      }));
-      setSourceEvents(events);
+      setSourceEvents(data);
     } catch (err: any) {
       setError((error) => ({
         ...error,
         apiError: err.message,
       }));
     }
-  };
+  }
 
-  const fetchDestinationEvents = async () => {
+  async function fetchDestinationEvents() {
     try {
       const response = await fetchData(
-        `/api/calendar-events?calendarId=${destinationCalendar?._id}&userId=${user?._id}`
+        `/api/calendar-events?calendarId=${destinationCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
       );
       const { data } = response;
-      const events = data?.map((eventData: any) => ({
-        id: eventData?.id,
-        title: eventData?.summary,
-        start: new Date(eventData?.start?.dateTime),
-        end: new Date(eventData?.end?.dateTime),
-        data: {
-          type: "multi-calendar",
-        },
-      }));
-      setDestinationEvents(events);
+      setDestinationEvents(data);
     } catch (err: any) {
       setError((error) => ({
         ...error,
@@ -75,7 +69,30 @@ export default function MergeCalendar() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
+  async function onFillCalendar() {
+    try {
+      setIsFillingCalendarLoading(true);
+      const response = await await postData(`/api/fill-calendar`, {
+        userId: user?._id,
+        events: sourceEvents,
+        calendarId: destinationCalendar._id,
+        isPaidUser: isPaidUser(user),
+      });
+      const { data } = response;
+      const { message } = data;
+      console.log(message);
+      router.push(`/application/${user?._id}/dashboard`);
+    } catch (err: any) {
+      setError((error) => ({
+        ...error,
+        apiError: err.message,
+      }));
+    } finally {
+      setIsFillingCalendarLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (fetchEvents) {
@@ -95,29 +112,57 @@ export default function MergeCalendar() {
     if (fetchEvents) {
       return (
         <div className="flex flex-col gap-8 mt-4">
-          <div className="text-subHeading text-lg">
-            Please confirm the events you want to transfer from the source
-            calendar to the destination calendar.
+          <div className="flex flex-col gap-2">
+            <p className="text-base font-medium text-subHeading">
+              Please confirm the events you want to transfer from the source
+              calendar to the destination calendar.
+            </p>
+            <p className="text-base leading-[24px] font-medium text-subHeading">
+              we will copy all the events from{" "}
+              <span className="font-bold text-heading">
+                {sourceCalendar?.name}
+              </span>{" "}
+              {" --> "}
+              <span className="font-bold text-heading">
+                {destinationCalendar?.name}
+              </span>
+            </p>
           </div>
           <div className="flex items-center gap-8">
             <Button
+              isDisabled={isFillingCalendarLoading}
               buttonText="Cancel"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
               onClick={() => setFetchEvents(false)}
             />
             <Button
+              isDisabled={isFillingCalendarLoading}
+              isLoading={isFillingCalendarLoading}
               buttonText="Confirm"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-              onClick={() => {
-                console.log(
-                  "I will fill the destination canlendar with source events..."
-                );
-                setFetchEvents(false);
-              }}
+              onClick={() => onFillCalendar()}
             />
           </div>
           <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
-            <MyCalendar events={[...sourceEvents, ...destinationEvents]} />
+            <MyCalendar
+              events={[
+                ...sourceEvents?.map((event: any) => ({
+                  ...event,
+                  title: event.summary,
+                  start: new Date(event?.start?.dateTime),
+                  end: new Date(event?.end?.dateTime),
+                  data: {
+                    type: "multi-calendar",
+                  },
+                })),
+                ...destinationEvents?.map((event: any) => ({
+                  ...event,
+                  title: event.summary,
+                  start: new Date(event?.start?.dateTime),
+                  end: new Date(event?.end?.dateTime),
+                })),
+              ]}
+            />
           </div>
         </div>
       );
@@ -138,6 +183,9 @@ export default function MergeCalendar() {
     );
   }
 
+  console.log("sourceCalendar", sourceCalendar);
+  console.log("destinationCalendar", destinationCalendar);
+
   return (
     <div className="flex items-start">
       <Sidebar />
@@ -156,7 +204,7 @@ export default function MergeCalendar() {
             <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
               Merge Calendar
             </h3>
-            <p className="text-lg leading-[36px] text-subHeading">
+            <p className="text-base leading-[24px] font-medium text-subHeading ">
               Select the source and the designation calendar. All the events
               from source will be merged into the destination calendar
             </p>
@@ -170,6 +218,11 @@ export default function MergeCalendar() {
                     (calendar) => calendar?._id === value?.id
                   );
                   setSourceCalendar(calendar);
+                  const filteredCalendars = calendars?.filter(
+                    (calendar) => calendar._id !== value?.id
+                  );
+                  console.log(filteredCalendars);
+                  setDestinationCalendar(filteredCalendars[0]);
                 }}
                 options={calendars?.map(({ _id = "", name = "" }) => ({
                   id: _id,
@@ -204,16 +257,16 @@ export default function MergeCalendar() {
               />
             </div>
             {error.apiError && (
-            <ApiError
-              message={error.apiError}
-              setMessage={(value) =>
-                setError((error) => ({
-                  ...error,
-                  apiError: value,
-                }))
-              }
-            />
-          )}
+              <ApiError
+                message={error.apiError}
+                setMessage={(value) =>
+                  setError((error) => ({
+                    ...error,
+                    apiError: value,
+                  }))
+                }
+              />
+            )}
             {renderButtonState()}
           </div>
         </div>

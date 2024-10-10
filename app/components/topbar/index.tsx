@@ -39,9 +39,12 @@ export default function TopBar() {
 
   return (
     <div className="py-6 px-8 flex items-center">
+      <div>
       <h2 className="font-archivo text-[32px] leading-[48px] text-heading font-bold">
         Hello, {user.firstName} {user.lastName} 👋🏻
       </h2>
+      <p className="text-sm leading-[36px] text-heading">{user?.email}</p>
+      </div>
       <div className="ml-auto">
         <>
           {error.apiError && (

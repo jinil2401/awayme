@@ -37,7 +37,6 @@ export default function Dashboard() {
         );
         const { data } = response;
         const events = data?.map((eventData: any) => ({
-          id: eventData?.id,
           title: eventData?.summary,
           start: new Date(eventData?.start?.dateTime),
           end: new Date(eventData?.end?.dateTime),
@@ -101,7 +100,7 @@ export default function Dashboard() {
                 <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
                   Dashboard
                 </h3>
-                <p className="text-lg leading-[36px] text-subHeading">
+                <p className="text-base leading-[24px] font-medium text-subHeading ">
                   A detailed view of your calendar events. You can switch
                   between your calendars here
                 </p>
@@ -133,7 +132,7 @@ export default function Dashboard() {
                 <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
                   Calendar View
                 </h3>
-                <p className="text-lg leading-[36px] text-subHeading">
+                <p className="text-base leading-[24px] font-medium text-subHeading ">
                   Select the calendar to view the events
                 </p>
                 <div className="flex mt-2">

@@ -19,36 +19,37 @@ interface IStoreEventTypes {
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
+// Utility function to process promises sequentially
+async function processSequentially(promises: any) {
+  const results = [];
+  for (const promise of promises) {
+    results.push(await promise());
+  }
+  return results;
+}
+
 async function storeGoogleEvents({
   events,
   accessToken,
   refreshToken,
 }: IStoreEventTypes) {
-  const calendar = googleClient({
-    accessToken,
-    refreshToken,
-  });
+  const calendar = googleClient({ accessToken, refreshToken });
 
-  try {
-    const promises = events.map((event: any) =>
-      calendar.events.insert({
+  const promises = events.map((event: any) => async () => {
+    try {
+      return await calendar.events.insert({
         calendarId: "primary",
         requestBody: event,
-      })
-    );
+      });
+    } catch (error) {
+      return { error, event }; // Return error with the event
+    }
+  });
 
-    const results = await Promise.allSettled(promises);
+  const results = await processSequentially(promises);
+  const errors = results.filter(result => result && result.error);
 
-    // Check if all promises were fulfilled
-    const allSuccessful = results.every(
-      (result) => result.status === "fulfilled"
-    );
-
-    return allSuccessful;
-  } catch (err) {
-    console.error("Error storing events:", err);
-    return false;
-  }
+  return { success: errors.length === 0, errors };
 }
 
 async function storeOutlookEvents({
@@ -58,32 +59,24 @@ async function storeOutlookEvents({
 }: IStoreEventTypes) {
   const url = "https://graph.microsoft.com/v1.0/me/events";
 
-  try {
-    const promises = events.map(async (event: any) => {
-      const response = await axios.post(url, event, {
+  const promises = events.map((event: any) => async () => {
+    try {
+      await axios.post(url, event, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
-      if (response.status === 200) {
-        return true;
-      }
-      return false
-    });
+      return null; // Return null for successful operations
+    } catch (error) {
+      return { error, event }; // Return error with the event
+    }
+  });
 
-    const results = await Promise.allSettled(promises);
+  const results = await processSequentially(promises);
+  const errors = results.filter(result => result);
 
-    // Check if all promises were fulfilled
-    const allSuccessful = results.every(
-      (result) => result.status === "fulfilled"
-    );
-
-    return allSuccessful;
-  } catch (err: any) {
-    console.error("Error storing events:", err.message);
-    return false;
-  }
+  return { success: errors.length === 0, errors };
 }
 
 export async function POST(request: Request) {
@@ -207,47 +200,50 @@ export async function POST(request: Request) {
     });
   }
 
-  if (result) {
-    try {
-      if (!isPaidUser) {
-        const twoWeeksLater = new Date(today);
-        twoWeeksLater.setDate(today.getDate() + 14);
-        // update the user account with nextUpdateDate timestamp
-        // this is needed because we will not allow to update if the current date
-        const updatedUser = await User.findOneAndUpdate(
-          { _id: user._id },
-          {
-            nextCalendarUpdateDate: twoWeeksLater,
-          },
-          {
-            new: true,
-          }
-        );
-
-        // check if the process successed
-        if (!updatedUser) {
-          return new NextResponse(
-            JSON.stringify({ message: "User next calendar date not updated!" }),
-            { status: 400 }
-          );
-        }
-      }
-
-      return new NextResponse(
-        JSON.stringify({
-          message: "Events stored successfully!",
-          data: {
-            events,
-          },
-        }),
+  if (result?.success) {
+    if (!isPaidUser) {
+      const twoWeeksLater = new Date(today);
+      twoWeeksLater.setDate(today.getDate() + 14);
+      // update the user account with nextUpdateDate timestamp
+      // this is needed because we will not allow to update if the current date
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: user._id },
         {
-          status: 201,
+          nextCalendarUpdateDate: twoWeeksLater,
+        },
+        {
+          new: true,
         }
       );
-    } catch (err) {
-      return new NextResponse("Error in storing event " + err, { status: 500 });
+
+      // check if the process successed
+      if (!updatedUser) {
+        return new NextResponse(
+          JSON.stringify({ message: "User next calendar date not updated!" }),
+          { status: 400 }
+        );
+      }
     }
+
+    return new NextResponse(
+      JSON.stringify({
+        message: "Events stored successfully!",
+        data: {
+          events,
+        },
+      }),
+      { status: 201 }
+    );
   } else {
-    return new NextResponse("Error in storing event ", { status: 500 });
+    return new NextResponse(
+      JSON.stringify({
+        message: "Error storing events.",
+        errors: result?.errors?.map(({ error, event }) => ({
+          message: error.message,
+          event,
+        })),
+      }),
+      { status: 500 }
+    );
   }
 }

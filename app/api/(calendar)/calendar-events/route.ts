@@ -36,7 +36,6 @@ export const getGoogleEvents = async ({ accessToken, refreshToken, maxTime }: IE
 
   // format the events for the calendar component
   const events = response?.map((eventData: any) => ({
-    id: eventData?.id,
     summary: eventData?.summary,
     start: eventData?.start,
     end: eventData?.end,
@@ -52,7 +51,7 @@ export const getMicrosoftEvents = async ({
   maxTime
 }: IEventTypes) => {
   const calendarResponse = await axios.get(
-    `https://graph.microsoft.com/v1.0/me/events?$expand=instances&$filter=start/dateTime le '${maxTime}'`,
+    `https://graph.microsoft.com/v1.0/me/events?$top=100&$expand=instances&$filter=start/dateTime le '${maxTime}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -76,7 +75,6 @@ export const getMicrosoftEvents = async ({
       timeZone: timezone,
     }
     return {
-      id: eventData?.id,
       summary: eventData?.subject,
       start,
       end,

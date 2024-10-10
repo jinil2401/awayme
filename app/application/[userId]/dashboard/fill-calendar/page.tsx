@@ -14,6 +14,9 @@ import { useCalendarContext } from "@/context/calendarContext";
 import Dropdown from "@/app/components/dropdown";
 import { isPaidUser } from "@/utils/checkProtectedRoutes";
 import { getFourMonthsLaterDate, getTwoWeeksLaterDate } from "@/utils/time";
+import "./styles.css";
+import moment from "moment";
+import Input from "@/app/components/input";
 
 export default function FillCalendar() {
   const router = useRouter();
@@ -30,17 +33,76 @@ export default function FillCalendar() {
   const [isFillingCalendarLoading, setIsFillingCalendarLoading] =
     useState(false);
   const [error, setError] = useState({
+    startDateError: "",
+    endDateError: "",
     apiError: "",
   });
+  const [state, setState] = useState({
+    fillPercentage: 20,
+    startDate: moment(new Date()).format("yyyy-MM-DD"),
+    endDate: moment(new Date()).add(14, "days").format("yyyy-MM-DD"),
+  });
 
-  async function fetchComputedEvents() {
+  const { fillPercentage, startDate, endDate } = state;
+
+  async function fetchFreeComputedEvents() {
     setFetchEvents(true);
     setIsFetchingComputedEventsLoading(true);
     try {
       // compute maxTime based on user plan
-      const maxTime = isPaidUser(user) ? getFourMonthsLaterDate() : getTwoWeeksLaterDate();
+      const maxTime = isPaidUser(user)
+        ? getFourMonthsLaterDate()
+        : getTwoWeeksLaterDate();
       const response = await fetchData(
-        `/api/compute-free-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
+        `/api/compute-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}`
+      );
+      const { data } = response;
+      setUserEvents(data?.events);
+      setComputedEvents(data?.computedEvents);
+    } catch (err: any) {
+      setError((error) => ({
+        ...error,
+        apiError: err.message,
+      }));
+    } finally {
+      setIsFetchingComputedEventsLoading(false);
+    }
+  }
+
+  async function fetchPaidComputedEvents() {
+    if (!startDate) {
+      setError((error) => ({
+        ...error,
+        startDateError: "Please select a start date",
+      }));
+      return;
+    }
+    if (!endDate) {
+      setError((error) => ({
+        ...error,
+        endDateError: "Please select an end date",
+      }));
+      return;
+    }
+    if (new Date(endDate).getTime() < new Date(startDate).getTime()) {
+      setError((error) => ({
+        ...error,
+        endDateError: "End date should be greater than start date",
+      }));
+      return;
+    }
+    setFetchEvents(true);
+    setIsFetchingComputedEventsLoading(true);
+    try {
+      // compute maxTime based on user plan
+      const maxTime = isPaidUser(user)
+        ? getFourMonthsLaterDate()
+        : getTwoWeeksLaterDate();
+
+      const start = new Date(startDate).toISOString();
+      const end = new Date(endDate).toISOString();
+      const response = await fetchData(
+        `/api/compute-events?calendarId=${selectedCalendar?._id}&userId=${user?._id}&maxTime=${maxTime}&percentage=${fillPercentage}&startDate=${start}&endDate=${end}`
       );
       const { data } = response;
       setUserEvents(data?.events);
@@ -131,6 +193,91 @@ export default function FillCalendar() {
         </div>
       );
     }
+    if (isPaidUser(user)) {
+      return (
+        <div className="flex flex-col gap-8 mt-4">
+          <div className="flex items-center gap-8">
+            <div className="w-[250px]">
+              <label
+                className="block text-sm text-heading mb-2 font-inter"
+                htmlFor="fillPercentage"
+              >
+                Fill Percentage
+              </label>
+              <input
+                disabled={fetchEvents}
+                type="range"
+                min="1"
+                max="100"
+                value={fillPercentage}
+                className="slider"
+                id="fillPercentage"
+                name="fillPercentage"
+                onChange={(event) =>
+                  setState((value) => ({
+                    ...value,
+                    fillPercentage: Number(event.target.value),
+                  }))
+                }
+              />
+              <p className="mt-2 text-base text-heading">{fillPercentage}%</p>
+            </div>
+
+            <div className="w-[250px]">
+              <Input
+                type="date"
+                hasLabel
+                value={startDate}
+                label="Start Date"
+                placeholder="Select your start date"
+                onChange={(event) =>
+                  setState((value) => ({
+                    ...value,
+                    startDate: event.target.value,
+                  }))
+                }
+                hasError={error.startDateError !== ""}
+                error={error.startDateError}
+                disabled={fetchEvents}
+              />
+            </div>
+            <div className="w-[250px]">
+              <Input
+                type="date"
+                hasLabel
+                value={endDate}
+                label="End Date"
+                placeholder="Select your end date"
+                onChange={(event) =>
+                  setState((value) => ({
+                    ...value,
+                    endDate: event.target.value,
+                  }))
+                }
+                hasError={error.endDateError !== ""}
+                error={error.endDateError}
+                disabled={fetchEvents}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-8 mt-4">
+            <Button
+              isDisabled={isFetchingComputedEventsLoading}
+              buttonText="Cancel"
+              buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
+              onClick={() => router.push(`/application/${user?._id}/dashboard`)}
+            />
+            <Button
+              isDisabled={isFetchingComputedEventsLoading}
+              isLoading={isFetchingComputedEventsLoading}
+              buttonText="Confirm"
+              buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
+              onClick={() => fetchPaidComputedEvents()}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-8 mt-4">
         <Button
@@ -144,7 +291,7 @@ export default function FillCalendar() {
           isLoading={isFetchingComputedEventsLoading}
           buttonText="Confirm"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-          onClick={() => fetchComputedEvents()}
+          onClick={() => fetchFreeComputedEvents()}
         />
       </div>
     );
@@ -168,9 +315,18 @@ export default function FillCalendar() {
             <h3 className="font-archivo text-2xl leading-[48px] text-heading font-semibold">
               Fill Calendar
             </h3>
-            <p className="text-lg leading-[36px] text-subHeading">
-              Select the Calendar to fill.
-            </p>
+            {isPaidUser(user) ? (
+              <p className="text-base leading-[24px] font-medium text-subHeading max-w-[60%]">
+                Fill the form according to your need. adjust the fill
+                percentage, the start and the end date accouding to your need
+              </p>
+            ) : (
+              <p className="text-base leading-[24px] font-medium text-subHeading max-w-[60%]">
+                Select the Calendar to fill. Because you are on free version
+                only 20% is allowed to fill. You will only be allowed to fill
+                once in two weeks
+              </p>
+            )}
             <div className="flex items-center gap-8 mt-4">
               <Dropdown
                 isDisabled={fetchEvents}
