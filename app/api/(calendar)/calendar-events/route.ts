@@ -1,90 +1,14 @@
 import { NextResponse } from "next/server";
-import googleClient from "@/lib/googleClient";
 import { Types } from "mongoose";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
 import { decrypt, encrypt } from "@/utils/crypto";
 import { CalendarTypes } from "@/constants/calendarTypes";
-import axios from "axios";
-import { msalConfig } from "@/lib/microsoftClient";
+import { getMicrosoftEvents, msalConfig } from "@/lib/microsoftClient";
 import { ConfidentialClientApplication } from "@azure/msal-node";
-import { convertUtcToLocal } from "@/utils/time";
-interface IEventTypes {
-  accessToken: string;
-  refreshToken: string;
-  maxTime: string;
-}
+import { getGoogleEvents } from "@/lib/googleClient";
 
 const cca = new ConfidentialClientApplication(msalConfig);
-
-export const getGoogleEvents = async ({ accessToken, refreshToken, maxTime }: IEventTypes) => {
-  const calendar = googleClient({
-    accessToken,
-    refreshToken,
-  });
-
-  const res = await calendar.events.list({
-    calendarId: "primary",
-    timeMin: new Date().toISOString(),
-    timeMax: maxTime,
-    singleEvents: true,
-    orderBy: "startTime",
-  });
-
-  // extract the events to format
-  const response = res.data.items;
-
-  // format the events for the calendar component
-  const events = response?.map((eventData: any) => ({
-    summary: eventData?.summary,
-    start: eventData?.start,
-    end: eventData?.end,
-  }));
-
-  // return the events
-  return events;
-};
-
-export const getMicrosoftEvents = async ({
-  accessToken,
-  refreshToken,
-  maxTime
-}: IEventTypes) => {
-  const currentTime = new Date().toISOString();
-  const calendarResponse = await axios.get(
-    `https://graph.microsoft.com/v1.0/me/events?$top=1000&$expand=instances&$filter=start/dateTime ge '${currentTime}' and end/dateTime le '${maxTime}'`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
-
-  // extract the events to format
-  const response = calendarResponse.data.value;
-
-  // format the events for the calendar component
-  const events = response?.map((eventData: any) => {
-    // convert the timezone to the user's local time
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const start = {
-      dateTime: convertUtcToLocal(eventData?.start?.dateTime, timezone),
-      timeZone: timezone,
-    }
-    const end = {
-      dateTime: convertUtcToLocal(eventData?.end?.dateTime, timezone),
-      timeZone: timezone,
-    }
-    return {
-      summary: eventData?.subject,
-      start,
-      end,
-    }
-  });
-
-  // return the events
-  return events;
-};
 
 // get exents for a calendar based on given id
 export async function GET(request: Request) {
@@ -95,10 +19,9 @@ export async function GET(request: Request) {
   const maxTime = searchParams.get("maxTime") as string;
 
   if (!maxTime) {
-    return new NextResponse(
-      JSON.stringify({ message: "Missing maxTime!" }),
-      { status: 400 }
-    );
+    return new NextResponse(JSON.stringify({ message: "Missing maxTime!" }), {
+      status: 400,
+    });
   }
 
   // check if the calendarId exist and is valid

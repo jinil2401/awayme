@@ -1,83 +1,16 @@
 import { CalendarTypes } from "@/constants/calendarTypes";
 import connect from "@/lib/db";
-import googleClient from "@/lib/googleClient";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
 import { decrypt, encrypt } from "@/utils/crypto";
 import moment from "moment";
 import { Types } from "mongoose";
 import { NextResponse } from "next/server";
-import axios from "axios";
 import { ConfidentialClientApplication } from "@azure/msal-node";
-import { msalConfig } from "@/lib/microsoftClient";
-
-interface IStoreEventTypes {
-  accessToken: string;
-  refreshToken: string;
-  events: any;
-}
+import { msalConfig, storeOutlookEvents } from "@/lib/microsoftClient";
+import { storeGoogleEvents } from "@/lib/googleClient";
 
 const cca = new ConfidentialClientApplication(msalConfig);
-
-// Utility function to process promises sequentially
-async function processSequentially(promises: any) {
-  const results = [];
-  for (const promise of promises) {
-    results.push(await promise());
-  }
-  return results;
-}
-
-async function storeGoogleEvents({
-  events,
-  accessToken,
-  refreshToken,
-}: IStoreEventTypes) {
-  const calendar = googleClient({ accessToken, refreshToken });
-
-  const promises = events.map((event: any) => async () => {
-    try {
-      return await calendar.events.insert({
-        calendarId: "primary",
-        requestBody: event,
-      });
-    } catch (error) {
-      return { error, event }; // Return error with the event
-    }
-  });
-
-  const results = await processSequentially(promises);
-  const errors = results.filter(result => result && result.error);
-
-  return { success: errors.length === 0, errors };
-}
-
-async function storeOutlookEvents({
-  events,
-  accessToken,
-  refreshToken,
-}: IStoreEventTypes) {
-  const url = "https://graph.microsoft.com/v1.0/me/events";
-
-  const promises = events.map((event: any) => async () => {
-    try {
-      await axios.post(url, event, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      return null; // Return null for successful operations
-    } catch (error) {
-      return { error, event }; // Return error with the event
-    }
-  });
-
-  const results = await processSequentially(promises);
-  const errors = results.filter(result => result);
-
-  return { success: errors.length === 0, errors };
-}
 
 export async function POST(request: Request) {
   const { events, userId, calendarId, isPaidUser } = await request.json();

@@ -1,7 +1,19 @@
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 
-export default function googleClient({
+interface IEventTypes {
+  accessToken: string;
+  refreshToken: string;
+  maxTime: string;
+}
+
+interface IStoreEventTypes {
+  accessToken: string;
+  refreshToken: string;
+  events: any;
+}
+
+function googleClient({
   accessToken,
   refreshToken,
 }: {
@@ -28,4 +40,69 @@ export default function googleClient({
   });
 
   return calendar;
+}
+
+export async function getGoogleEvents({
+  accessToken,
+  refreshToken,
+  maxTime,
+}: IEventTypes) {
+  const calendar = googleClient({
+    accessToken,
+    refreshToken,
+  });
+
+  const res = await calendar.events.list({
+    calendarId: "primary",
+    timeMin: new Date().toISOString(),
+    timeMax: maxTime,
+    singleEvents: true,
+    orderBy: "startTime",
+  });
+
+  // extract the events to format
+  const response = res.data.items;
+
+  // format the events for the calendar component
+  const events = response?.map((eventData: any) => ({
+    summary: eventData?.summary,
+    start: eventData?.start,
+    end: eventData?.end,
+  }));
+
+  // return the events
+  return events;
+}
+
+// Utility function to process promises sequentially
+async function processSequentially(promises: any) {
+  const results = [];
+  for (const promise of promises) {
+    results.push(await promise());
+  }
+  return results;
+}
+
+export async function storeGoogleEvents({
+  events,
+  accessToken,
+  refreshToken,
+}: IStoreEventTypes) {
+  const calendar = googleClient({ accessToken, refreshToken });
+
+  const promises = events.map((event: any) => async () => {
+    try {
+      return await calendar.events.insert({
+        calendarId: "primary",
+        requestBody: event,
+      });
+    } catch (error) {
+      return { error, event }; // Return error with the event
+    }
+  });
+
+  const results = await processSequentially(promises);
+  const errors = results.filter((result) => result && result.error);
+
+  return { success: errors.length === 0, errors };
 }

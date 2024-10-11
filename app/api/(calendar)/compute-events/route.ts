@@ -4,9 +4,9 @@ import User from "@/lib/models/user";
 import { decrypt, encrypt } from "@/utils/crypto";
 import { Types } from "mongoose";
 import { NextResponse } from "next/server";
-import { getGoogleEvents, getMicrosoftEvents } from "../calendar-events/route";
 import { ConfidentialClientApplication } from "@azure/msal-node";
-import { msalConfig } from "@/lib/microsoftClient";
+import { getMicrosoftEvents, msalConfig } from "@/lib/microsoftClient";
+import { getGoogleEvents } from "@/lib/googleClient";
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
@@ -19,11 +19,7 @@ function findFreeSlots(events: any, endDate: Date) {
   const freeSlots = [];
   const now = new Date();
 
-  for (
-    let d = new Date(now);
-    d <= endDate;
-    d.setDate(d.getDate() + 1)
-  ) {
+  for (let d = new Date(now); d <= endDate; d.setDate(d.getDate() + 1)) {
     const day = d.getDay();
 
     if (day >= 1 && day <= 5) {
@@ -56,11 +52,11 @@ function findFreeSlots(events: any, endDate: Date) {
 }
 
 function createRandomEvents({
-    freeSlots,
-    minDuration,
-    maxDuration,
-    percentage,
-    timeZone,
+  freeSlots,
+  minDuration,
+  maxDuration,
+  percentage,
+  timeZone,
 }: {
   freeSlots: any;
   minDuration: number;
@@ -83,8 +79,13 @@ function createRandomEvents({
     .slice(0, numberOfEvents);
 
   for (const slot of shuffledSlots) {
-    const maxPossibleDuration = Math.min(maxDuration, (slot.end - slot.start) / (60 * 1000));
-    const randomDuration = Math.floor(Math.random() * (maxPossibleDuration - minDuration + 1)) + minDuration;
+    const maxPossibleDuration = Math.min(
+      maxDuration,
+      (slot.end - slot.start) / (60 * 1000)
+    );
+    const randomDuration =
+      Math.floor(Math.random() * (maxPossibleDuration - minDuration + 1)) +
+      minDuration;
 
     const randomStartOffset = Math.floor(
       Math.random() * ((slot.end - slot.start) / (60 * 1000) - randomDuration)
@@ -107,7 +108,6 @@ function createRandomEvents({
   return randomEvents;
 }
 
-
 export async function GET(request: Request) {
   try {
     // extract the store id from the search params
@@ -116,14 +116,18 @@ export async function GET(request: Request) {
     const userId = searchParams.get("userId");
     const maxTime = searchParams.get("maxTime") as string;
     const percentage = parseFloat(searchParams.get("percentage") || "25");
-    const startDate = new Date(searchParams.get("startDate") || new Date().toISOString());
-    const endDate = new Date(searchParams.get("endDate") || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString());
-    
+    const startDate = new Date(
+      searchParams.get("startDate") || new Date().toISOString()
+    );
+    const endDate = new Date(
+      searchParams.get("endDate") ||
+        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+    );
+
     if (!maxTime) {
-      return new NextResponse(
-        JSON.stringify({ message: "Missing maxTime!" }),
-        { status: 400 }
-      );
+      return new NextResponse(JSON.stringify({ message: "Missing maxTime!" }), {
+        status: 400,
+      });
     }
 
     // check if the calendarId exist and is valid
@@ -215,14 +219,14 @@ export async function GET(request: Request) {
       events = await getMicrosoftEvents({ accessToken, refreshToken, maxTime });
     }
 
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone; 
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     // fetch all the available free slots
     const freeSlots = findFreeSlots(events, endDate);
 
     // Filter freeSlots based on the provided startDate and endDate
-    const filteredSlots = freeSlots.filter(slot => 
-      slot.start >= startDate && slot.end <= endDate
+    const filteredSlots = freeSlots.filter(
+      (slot) => slot.start >= startDate && slot.end <= endDate
     );
 
     // set min and max duration of the event
@@ -243,7 +247,7 @@ export async function GET(request: Request) {
         message: "Events computed successfully!",
         data: {
           events,
-          computedEvents
+          computedEvents,
         },
       }),
       {
