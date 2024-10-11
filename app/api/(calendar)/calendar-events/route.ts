@@ -50,8 +50,9 @@ export const getMicrosoftEvents = async ({
   refreshToken,
   maxTime
 }: IEventTypes) => {
+  const currentTime = new Date().toISOString();
   const calendarResponse = await axios.get(
-    `https://graph.microsoft.com/v1.0/me/events?$top=100&$expand=instances&$filter=start/dateTime le '${maxTime}'`,
+    `https://graph.microsoft.com/v1.0/me/events?$top=1000&$expand=instances&$filter=start/dateTime ge '${currentTime}' and end/dateTime le '${maxTime}'`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,

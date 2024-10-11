@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import AzureADProvider from "next-auth/providers/azure-ad";
 
 import { NextAuthOptions, Session } from "next-auth";
 import { cookies } from "next/headers";
@@ -9,13 +8,10 @@ import User from "@/lib/models/user";
 import Calendar from "@/lib/models/calendar";
 import { Types } from "mongoose";
 import { encrypt } from "@/utils/crypto";
+import { CalendarTypes } from "@/constants/calendarTypes";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID || "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
-
-const microsoftClientId = process.env.AZURE_AD_CLIENT_ID || "";
-const microsoftClientSecret = process.env.AZURE_AD_CLIENT_SECRET || "";
-const microsoftTenantId = process.env.AZURE_AD_TENANT_ID || "";
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -35,15 +31,7 @@ const authOptions: NextAuthOptions = {
           response: "code",
         },
       },
-    }),
-    AzureADProvider({
-      clientId: microsoftClientId,
-      clientSecret: microsoftClientSecret,
-      tenantId: microsoftTenantId,
-      authorization: {
-        params: { scope: "openid email profile User.Read Calendars.ReadWrite" },
-      },
-    }),
+    })
   ],
   secret: process.env.NEXT_AUTH_SECRET,
   callbacks: {
@@ -71,6 +59,7 @@ const authOptions: NextAuthOptions = {
         const selectedCalendar = await Calendar.findOne({
           email: user?.email,
           user: new Types.ObjectId(selectedUser._id),
+          provider: CalendarTypes.GOOGLE
         });
 
         // if the calendar exists in the database
@@ -78,7 +67,7 @@ const authOptions: NextAuthOptions = {
           // delete the calendar name from the cookies
           cookieStore.delete("calendarName");
           // throw an error stating that the calendar is already in the database
-          throw new Error("user calendar is already imported!");
+          throw new Error("user's calendar is already imported!");
         }
 
         // fetch all the calendars of the user
@@ -112,7 +101,7 @@ const authOptions: NextAuthOptions = {
           email: user?.email,
           access_token,
           refresh_token,
-          provider: account?.provider,
+          provider: CalendarTypes.GOOGLE,
           expires_at: account?.expires_at,
           user: new Types.ObjectId(selectedUser._id),
         });

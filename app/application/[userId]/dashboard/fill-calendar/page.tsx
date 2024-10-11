@@ -45,7 +45,7 @@ export default function FillCalendar() {
 
   const { fillPercentage, startDate, endDate } = state;
 
-  async function fetchFreeComputedEvents() {
+  async function fetchComputedEvents() {
     setFetchEvents(true);
     setIsFetchingComputedEventsLoading(true);
     try {
@@ -150,24 +150,40 @@ export default function FillCalendar() {
     }
     if (fetchEvents) {
       return (
-        <div className="flex flex-col gap-8 mt-4">
+        <div className="flex flex-col gap-4 mt-4">
           <div className="text-subHeading text-lg">
             Please confirm the events you want to create.
           </div>
           <div className="flex items-center gap-8">
             <Button
               isDisabled={isFillingCalendarLoading}
-              buttonText="Cancel"
+              buttonText="Start Over"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
               onClick={() => setFetchEvents(false)}
             />
             <Button
               isDisabled={isFillingCalendarLoading}
               isLoading={isFillingCalendarLoading}
-              buttonText="Confirm"
+              buttonText="Fill Calendar"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
               onClick={() => onFillCalendar()}
             />
+          </div>
+          <div className="py-2">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-[#854545] rounded-[8px]" />
+                <p className="text-sm leading-md text-heading">
+                  Computed Events
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-accent rounded-[8px]" />
+                <p className="text-sm leading-md text-heading">
+                  {selectedCalendar?.name} Events
+                </p>
+              </div>
+            </div>
           </div>
           <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
             <MyCalendar
@@ -270,7 +286,7 @@ export default function FillCalendar() {
             <Button
               isDisabled={isFetchingComputedEventsLoading}
               isLoading={isFetchingComputedEventsLoading}
-              buttonText="Confirm"
+              buttonText="Compute Events"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
               onClick={() => fetchPaidComputedEvents()}
             />
@@ -289,9 +305,9 @@ export default function FillCalendar() {
         <Button
           isDisabled={isFetchingComputedEventsLoading}
           isLoading={isFetchingComputedEventsLoading}
-          buttonText="Confirm"
+          buttonText="Compute Events"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-          onClick={() => fetchFreeComputedEvents()}
+          onClick={() => fetchComputedEvents()}
         />
       </div>
     );

@@ -15,11 +15,8 @@ export async function GET(req: NextRequest) {
   const code: string = req.nextUrl.searchParams.get("code") as string;
 
   if (!code) {
-    return new NextResponse(
-      JSON.stringify({
-        message: "Authorization code is missing!",
-      }),
-      { status: 400 }
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/auth/error?error=user denied access!`
     );
   }
   try {
@@ -38,9 +35,8 @@ export async function GET(req: NextRequest) {
       select: ["_id", "planId", "name", "numberOfCalendarsAllowed"],
     });
     if (!selectedUser) {
-      return new NextResponse(
-        JSON.stringify({ message: "User does not exist!" }),
-        { status: 400 }
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/auth/error?error=User does not exist!`
       );
     }
 
@@ -54,12 +50,8 @@ export async function GET(req: NextRequest) {
       // delete the calendar name from the cookies
       cookieStore.delete("calendarName");
       // throw an error stating that user does not enough credits to import
-      return new NextResponse(
-        JSON.stringify({
-          message:
-            "user does not have enough credits to import this calendar. Please upgrade your plan to import more calendars!",
-        }),
-        { status: 400 }
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/auth/error?error=user does not have enough credits to import this calendar. Please upgrade your plan to import more calendars!`
       );
     }
 
@@ -77,6 +69,7 @@ export async function GET(req: NextRequest) {
     const selectedCalendar = await Calendar.findOne({
       email: account?.username,
       user: new Types.ObjectId(selectedUser._id),
+      provider: CalendarTypes.OUTLOOK
     });
 
     // if the calendar exists in the database
@@ -84,9 +77,8 @@ export async function GET(req: NextRequest) {
       // delete the calendar name from the cookies
       cookieStore.delete("calendarName");
       // throw an error stating that the calendar is already in the database
-      return new NextResponse(
-        JSON.stringify({ message: "user calendar is already imported!" }),
-        { status: 400 }
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/auth/error?error=user's calendar is already imported!`
       );
     }
 

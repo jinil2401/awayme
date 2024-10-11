@@ -131,17 +131,33 @@ export default function MergeCalendar() {
           <div className="flex items-center gap-8">
             <Button
               isDisabled={isFillingCalendarLoading}
-              buttonText="Cancel"
+              buttonText="Start Over"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-subHeading text-white"
               onClick={() => setFetchEvents(false)}
             />
             <Button
               isDisabled={isFillingCalendarLoading}
               isLoading={isFillingCalendarLoading}
-              buttonText="Confirm"
+              buttonText="Merge Calendar"
               buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
               onClick={() => onFillCalendar()}
             />
+          </div>
+          <div className="py-2">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-[#854545] rounded-[8px]" />
+                <p className="text-sm leading-md text-heading">
+                  {sourceCalendar?.name} Events
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-accent rounded-[8px]" />
+                <p className="text-sm leading-md text-heading">
+                  {destinationCalendar?.name} Events
+                </p>
+              </div>
+            </div>
           </div>
           <div className="w-[80%] bg-white border border-stroke/20 rounded-[12px] p-5 shadow-card">
             <MyCalendar
@@ -175,16 +191,13 @@ export default function MergeCalendar() {
           onClick={() => router.push(`/application/${user?._id}/dashboard`)}
         />
         <Button
-          buttonText="Confirm"
+          buttonText="Fetch Events"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
           onClick={() => setFetchEvents(true)}
         />
       </div>
     );
   }
-
-  console.log("sourceCalendar", sourceCalendar);
-  console.log("destinationCalendar", destinationCalendar);
 
   return (
     <div className="flex items-start">
@@ -196,6 +209,11 @@ export default function MergeCalendar() {
             <Link
               href={`/application/${user?._id}/dashboard`}
               className="text-heading underline font-medium text-md leading-md"
+              onClick={(event) => {
+                if(isFillingCalendarLoading) {
+                  event.preventDefault();
+                }
+              }}
             >
               Dashboard
             </Link>
@@ -221,7 +239,6 @@ export default function MergeCalendar() {
                   const filteredCalendars = calendars?.filter(
                     (calendar) => calendar._id !== value?.id
                   );
-                  console.log(filteredCalendars);
                   setDestinationCalendar(filteredCalendars[0]);
                 }}
                 options={calendars?.map(({ _id = "", name = "" }) => ({

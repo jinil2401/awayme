@@ -139,6 +139,7 @@ export default function Dashboard() {
                   <Dropdown
                     id="selectCalendar"
                     label="Select Calendar"
+                    isDisabled={loading}
                     onClick={(value) => {
                       const calendar: any = calendars.find(
                         (calendar) => calendar?._id === value?.id
