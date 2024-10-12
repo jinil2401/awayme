@@ -7,7 +7,7 @@ import logo from "@/public/logo.png";
 import { useUserContext } from "@/context/userContext";
 import Button from "@/app/components/button";
 
-export function PaymentSuccess() {
+export default function PaymentSuccess() {
   const { user } = useUserContext();
   const router = useRouter();
 
@@ -40,5 +40,3 @@ export function PaymentSuccess() {
     </div>
   );
 }
-
-export default PaymentSuccess;
