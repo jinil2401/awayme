@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
       ],
       mode: mode,
       billing_address_collection: "required",
-      success_url: `${process.env.BASE_URL}/application/${userId}/payment-success`,
-      cancel_url: `${process.env.BASE_URL}/application/${userId}/billing`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/application/${userId}/payment-success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/application/${userId}/billing`,
       metadata,
     });
 
