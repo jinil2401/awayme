@@ -98,8 +98,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const metadata = {
-      userId: String(userId), // Ensure it's a string
+      userId: String(userId),
       planType: String(planId),
+      nextCalendarUpdateDate: "",
     };
 
     const session = await stripe.checkout.sessions.create({

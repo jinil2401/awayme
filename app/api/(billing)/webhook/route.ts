@@ -27,6 +27,7 @@ export const POST = async (req: NextRequest) => {
 
       const userId = session.metadata?.userId;
       const planId = session.metadata?.planType;
+      const nextCalendarUpdateDate = session.metadata?.nextCalendarUpdateDate;
 
       if (userId && planId) {
         try {
@@ -35,7 +36,7 @@ export const POST = async (req: NextRequest) => {
             { _id: userId },
             {
               plan: new Types.ObjectId(planId),
-              nextCalendarUpdateDate: undefined,
+              nextCalendarUpdateDate,
             }
           );
         } catch (dbErr) {
