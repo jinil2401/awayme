@@ -6,6 +6,8 @@ export default function PlanCard({
   plan,
   isCurrentPlan,
   isPlanFree,
+  isLoading,
+  onUpgrade,
 }: IPlanCardProps) {
   const { name, price, features } = plan;
   return (
@@ -40,7 +42,9 @@ export default function PlanCard({
           <Button
             buttonText="Upgrade Now"
             buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-            onClick={() => console.log("Upgrade Now")}
+            isLoading={isLoading}
+            isDisabled={isLoading}
+            onClick={() => onUpgrade(plan)}
           />
         ) : null}
       </div>

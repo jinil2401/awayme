@@ -4,4 +4,6 @@ export interface IPlanCardProps {
     plan: IPlan;
     isCurrentPlan: boolean;
     isPlanFree: boolean;
+    isLoading: boolean;
+    onUpgrade: (plan: IPlan) => void;
 }
