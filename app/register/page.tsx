@@ -155,7 +155,7 @@ export default function Register() {
   return (
     <main className="flex flex-col">
       <AuthHeader />
-      <div className="h-[100vh] flex items-center justify-center gap-20">
+      <div className="h-[110vh] flex items-center justify-center gap-20">
         <img
           src="./auth-illustration.png"
           alt="Auth Illustration"
