@@ -5,8 +5,8 @@ interface IEventTypes {
   accessToken: string;
   refreshToken: string;
   maxTime: string;
+  timeZone: string;
 }
-
 
 interface IStoreEventTypes {
   accessToken: string;
@@ -25,7 +25,8 @@ export const msalConfig = {
 export async function getMicrosoftEvents({
   accessToken,
   refreshToken,
-  maxTime
+  maxTime,
+  timeZone,
 }: IEventTypes) {
   const currentTime = new Date().toISOString();
   const calendarResponse = await axios.get(
@@ -42,27 +43,24 @@ export async function getMicrosoftEvents({
 
   // format the events for the calendar component
   const events = response?.map((eventData: any) => {
-    // convert the timezone to the user's local time
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const start = {
-      dateTime: convertUtcToLocal(eventData?.start?.dateTime, timezone),
-      timeZone: timezone,
-    }
+      dateTime: convertUtcToLocal(eventData?.start?.dateTime, timeZone),
+      timeZone: timeZone,
+    };
     const end = {
-      dateTime: convertUtcToLocal(eventData?.end?.dateTime, timezone),
-      timeZone: timezone,
-    }
+      dateTime: convertUtcToLocal(eventData?.end?.dateTime, timeZone),
+      timeZone: timeZone,
+    };
     return {
       summary: eventData?.subject,
       start,
       end,
-    }
+    };
   });
 
   // return the events
   return events;
-};
-
+}
 
 // Utility function to process promises sequentially
 async function processSequentially(promises: any) {
@@ -95,7 +93,7 @@ export async function storeOutlookEvents({
   });
 
   const results = await processSequentially(promises);
-  const errors = results.filter(result => result);
+  const errors = results.filter((result) => result);
 
   return { success: errors.length === 0, errors };
 }

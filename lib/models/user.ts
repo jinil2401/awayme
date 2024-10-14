@@ -11,6 +11,7 @@ const UserSchema = new Schema(
       required: true,
     },
     email: {
+      unique: true,
       type: String,
       required: true,
     },
@@ -22,7 +23,7 @@ const UserSchema = new Schema(
       default: false,
     },
     numberOfRetries: {
-      type: Number
+      type: Number,
     },
     verifyToken: {
       type: String,
@@ -36,7 +37,11 @@ const UserSchema = new Schema(
     plan: {
       type: Schema.Types.ObjectId,
       ref: "Plan",
-    }
+    },
+    timeZone: {
+      type: String,
+      default: Intl.DateTimeFormat().resolvedOptions().timeZone, // default time zone is New York
+    },
   },
   {
     timestamps: true,

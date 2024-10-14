@@ -7,7 +7,6 @@ import Sidebar from "@/app/components/sidebar";
 import TopBar from "@/app/components/topbar";
 import { useCalendarContext } from "@/context/calendarContext";
 import { useUserContext } from "@/context/userContext";
-import { capitalizeFirstLetter } from "@/utils/capitalizeFirstLetter";
 import { useRouter } from "next/navigation";
 import { fetchData } from "@/utils/fetch";
 import MyCalendar from "@/app/components/calendar";

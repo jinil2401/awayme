@@ -77,7 +77,12 @@ export async function GET(request: Request) {
     const accessToken = decrypt(access_token);
     const refreshToken = decrypt(refresh_token);
     // pass it to the function
-    events = await getGoogleEvents({ accessToken, refreshToken, maxTime });
+    events = await getGoogleEvents({
+      accessToken,
+      refreshToken,
+      maxTime,
+      timeZone: user?.timeZone,
+    });
   } else if (
     calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
   ) {
@@ -108,7 +113,12 @@ export async function GET(request: Request) {
       await calendar.save();
     }
     // pass it to the function
-    events = await getMicrosoftEvents({ accessToken, refreshToken, maxTime });
+    events = await getMicrosoftEvents({
+      accessToken,
+      refreshToken,
+      maxTime,
+      timeZone: user?.timeZone,
+    });
   }
 
   return new NextResponse(

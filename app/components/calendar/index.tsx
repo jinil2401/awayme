@@ -1,18 +1,21 @@
 "use client";
 import { Calendar, Views, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
+import "moment-timezone";
 import { ICalendarProps } from "./interface";
 import { useState } from "react";
 import "./styles.css";
-
 import "react-big-calendar/lib/css/react-big-calendar.css";
-
-const localizer = momentLocalizer(moment);
+import { useUserContext } from "@/context/userContext";
 
 export default function MyCalendar(props: ICalendarProps) {
-  const { events, eventColor = "#4D869C" } = props;
+  const { user } = useUserContext();
+  const { events } = props;
   const [view, setView] = useState(Views.WEEK);
   const [date, setDate] = useState(new Date());
+
+  moment.tz.setDefault(user?.timeZone);
+  const localizer = momentLocalizer(moment);
 
   const components: any = {
     event: (props: any) => {
@@ -62,10 +65,6 @@ export default function MyCalendar(props: ICalendarProps) {
         onView={(view: any) => setView(view)}
         localizer={localizer}
         events={events}
-        // start time 8:00am
-        min={new Date(date.getFullYear(), date.getMonth(), date.getDate(), 8)}
-        // end time 8:00pm
-        max={new Date(date.getFullYear(), date.getMonth(), date.getDate(), 20)}
         startAccessor="start"
         endAccessor="end"
         style={{ height: 600 }}

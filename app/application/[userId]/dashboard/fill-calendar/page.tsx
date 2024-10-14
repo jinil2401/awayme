@@ -45,7 +45,7 @@ export default function FillCalendar() {
 
   const { fillPercentage, startDate, endDate } = state;
 
-  async function fetchComputedEvents() {
+  async function fetchFreeComputedEvents() {
     setFetchEvents(true);
     setIsFetchingComputedEventsLoading(true);
     try {
@@ -307,7 +307,7 @@ export default function FillCalendar() {
           isLoading={isFetchingComputedEventsLoading}
           buttonText="Compute Events"
           buttonClassName="rounded-md shadow-button hover:shadow-buttonHover bg-accent text-white"
-          onClick={() => fetchComputedEvents()}
+          onClick={() => fetchFreeComputedEvents()}
         />
       </div>
     );

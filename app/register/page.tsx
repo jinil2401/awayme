@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
 import AuthHeader from "../components/auth-header";
@@ -8,6 +8,8 @@ import { postData } from "@/utils/fetch";
 import { useRouter } from "next/navigation";
 import { useUserContext } from "@/context/userContext";
 import Link from "next/link";
+import Dropdown from "../components/dropdown";
+import { getAllTimezones } from "@/utils/time";
 
 export default function Register() {
   const router = useRouter();
@@ -15,17 +17,27 @@ export default function Register() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [timezones, setTimezones] = useState<any[]>([]);
+  const [selectedTimezone, setSelectedTimezone] = useState("");
   const [error, setError] = useState({
     emailError: "",
     passwordError: "",
     firstNameError: "",
     lastNameError: "",
+    timeZoneError: "",
     apiError: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
   // CONTEXT
   const { setUser } = useUserContext();
+
+  useEffect(() => {
+    const { tzNames, currentTimezone } = getAllTimezones();
+    setTimezones(tzNames?.map((tz) => ({ id: tz, name: tz })));
+    // set current timezone as a default selection
+    setSelectedTimezone(currentTimezone);
+  }, []);
 
   function checkEmail() {
     if (!email) {
@@ -94,6 +106,10 @@ export default function Register() {
     return true;
   }
 
+  function handleTimezoneChange(timeZone: string) {
+    setSelectedTimezone(timeZone);
+  }
+
   async function handleSignUp() {
     const ALL_CHECKS_PASS = [
       checkPassword(),
@@ -111,6 +127,7 @@ export default function Register() {
         lastName,
         email,
         password,
+        timeZone: selectedTimezone,
       });
       const { data } = response;
       if (data) {
@@ -201,6 +218,19 @@ export default function Register() {
               hasError={error.passwordError !== ""}
               error={error.passwordError}
               disabled={isLoading}
+            />
+            <Dropdown
+              id="selectTimeZone"
+              label="Select Time Zone"
+              isDisabled={isLoading}
+              onClick={(value) => handleTimezoneChange(value?.id)}
+              options={timezones}
+              selectedOption={{
+                id: selectedTimezone,
+                name: selectedTimezone,
+              }}
+              hasError={error.timeZoneError !== ""}
+              error={error.timeZoneError}
             />
             {error.apiError && (
               <ApiError

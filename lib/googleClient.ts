@@ -1,3 +1,4 @@
+import { convertUtcToLocal } from "@/utils/time";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 
@@ -5,6 +6,7 @@ interface IEventTypes {
   accessToken: string;
   refreshToken: string;
   maxTime: string;
+  timeZone: string;
 }
 
 interface IStoreEventTypes {
@@ -46,6 +48,7 @@ export async function getGoogleEvents({
   accessToken,
   refreshToken,
   maxTime,
+  timeZone,
 }: IEventTypes) {
   const calendar = googleClient({
     accessToken,
@@ -64,11 +67,22 @@ export async function getGoogleEvents({
   const response = res.data.items;
 
   // format the events for the calendar component
-  const events = response?.map((eventData: any) => ({
-    summary: eventData?.summary,
-    start: eventData?.start,
-    end: eventData?.end,
-  }));
+  const events = response?.map((eventData: any) => {
+    // convert the timezone to the user's local time
+    const start = {
+      dateTime: convertUtcToLocal(eventData?.start?.dateTime, timeZone),
+      timeZone: timeZone,
+    };
+    const end = {
+      dateTime: convertUtcToLocal(eventData?.end?.dateTime, timeZone),
+      timeZone: timeZone,
+    };
+    return {
+      summary: eventData?.summary,
+      start,
+      end,
+    };
+  });
 
   // return the events
   return events;

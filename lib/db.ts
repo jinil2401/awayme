@@ -16,7 +16,7 @@ const connect = async () => {
 
   try {
     await mongoose.connect(DB_URL!, {
-      dbName: "AwayMe",
+      dbName: process.env.DATABASE_NAME,
       bufferCommands: false,
     });
   } catch (err) {

@@ -27,7 +27,8 @@ function getVerificationToken(user: IUser): string {
 
 export const POST = async (request: Request) => {
   try {
-    const { firstName, lastName, email, password } = await request.json();
+    const { firstName, lastName, email, password, timeZone } =
+      await request.json();
 
     // encrypt the password using bcrypt
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -49,7 +50,7 @@ export const POST = async (request: Request) => {
     // fetch all plans
     const plans = await Plan.find();
 
-    const freePlan: any = plans.filter(plan => plan.planId === "free");
+    const freePlan: any = plans.filter((plan) => plan.planId === "free");
 
     // create the new user object
     const newUser = new User({
@@ -59,6 +60,7 @@ export const POST = async (request: Request) => {
       password: hashedPassword,
       numberOfRetries: 0,
       plan: new Types.ObjectId(freePlan?.[0]?._id),
+      timeZone,
     });
 
     // generate a verification token for the user and save it in the database

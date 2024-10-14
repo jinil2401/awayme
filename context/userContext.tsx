@@ -16,8 +16,9 @@ export interface IUser {
     _id: string;
     planId: string;
     name: string;
-    numberOfCalendarsAllowed: number
+    numberOfCalendarsAllowed: number;
   };
+  timeZone: string;
 }
 
 const INITIAL_STATE: IUser = {
@@ -31,7 +32,8 @@ const INITIAL_STATE: IUser = {
     planId: "",
     name: "",
     numberOfCalendarsAllowed: 0,
-  }
+  },
+  timeZone: "",
 };
 
 const Context = createContext<{

@@ -1,4 +1,5 @@
 import { CalendarTypes } from "@/constants/calendarTypes";
+import moment from "moment-timezone";
 import Calendar from "@/lib/models/calendar";
 import User from "@/lib/models/user";
 import { decrypt, encrypt } from "@/utils/crypto";
@@ -10,41 +11,62 @@ import { getGoogleEvents } from "@/lib/googleClient";
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
-function findFreeSlots(events: any, endDate: Date) {
+function findFreeSlots(events: any, endDate: Date, timeZone: string) {
   const busyTimes = events.map((event: any) => ({
-    start: new Date(event.start.dateTime),
-    end: new Date(event.end.dateTime),
+    start: moment.tz(event.start.dateTime, timeZone),
+    end: moment.tz(event.end.dateTime, timeZone),
   }));
 
   const freeSlots = [];
-  const now = new Date();
+  const now = moment();
 
-  for (let d = new Date(now); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const day = d.getDay();
+  for (
+    let d = moment.tz(now, timeZone);
+    d.isBefore(endDate);
+    d.add(1, "days")
+  ) {
+    const day = d.day();
 
+    // Only consider weekdays (Monday to Friday)
     if (day >= 1 && day <= 5) {
-      let lastEndTime = new Date(d.setHours(8, 0, 0));
-      const workingHoursEnd = new Date(d.setHours(18, 0, 0));
+      // Set the working hours between 8 AM and 6 PM in the user's timezone
+      const startOfWorkingHours = moment
+        .tz(d.format("YYYY-MM-DD"), timeZone)
+        .set({ hour: 8, minute: 0, second: 0 });
+      const endOfWorkingHours = moment
+        .tz(d.format("YYYY-MM-DD"), timeZone)
+        .set({ hour: 18, minute: 0, second: 0 });
 
+      let lastEndTime = startOfWorkingHours;
+
+      // Iterate through busy times and find free slots between working hours
       for (const busy of busyTimes) {
+        // If there is a free slot between the end of the last event and the start of the next event
         if (
-          lastEndTime < busy.start &&
-          busy.start >= lastEndTime &&
-          busy.start <= workingHoursEnd
+          lastEndTime.isBefore(busy.start) &&
+          busy.start.isSameOrAfter(lastEndTime) &&
+          busy.start.isSameOrBefore(endOfWorkingHours)
         ) {
-          freeSlots.push({ start: lastEndTime, end: busy.start });
+          freeSlots.push({
+            start: lastEndTime.toDate(),
+            end: busy.start.toDate(),
+          });
         }
         if (
-          lastEndTime < busy.end &&
-          busy.start >= lastEndTime &&
-          busy.start <= workingHoursEnd
+          lastEndTime.isBefore(busy.end) &&
+          busy.start.isSameOrAfter(lastEndTime) &&
+          busy.start.isSameOrBefore(endOfWorkingHours)
         ) {
           lastEndTime = busy.end;
         }
       }
 
-      if (lastEndTime < workingHoursEnd) {
-        freeSlots.push({ start: lastEndTime, end: workingHoursEnd });
+      // If there is free time between the end of the last event and the end of the working hours
+      if (lastEndTime.isBefore(endOfWorkingHours)) {
+        freeSlots.push({
+          start: lastEndTime.toDate(),
+          end: endOfWorkingHours.toDate(),
+        });
       }
     }
   }
@@ -74,34 +96,35 @@ function createRandomEvents({
     return randomEvents;
   }
 
+  // Shuffle and select slots
   const shuffledSlots = freeSlots
     .sort(() => 0.3 - Math.random())
     .slice(0, numberOfEvents);
 
   for (const slot of shuffledSlots) {
+    const slotStart = moment.tz(slot.start, timeZone);
+    const slotEnd = moment.tz(slot.end, timeZone);
+
     const maxPossibleDuration = Math.min(
       maxDuration,
-      (slot.end - slot.start) / (60 * 1000)
+      slotEnd.diff(slotStart, "minutes")
     );
+
     const randomDuration =
       Math.floor(Math.random() * (maxPossibleDuration - minDuration + 1)) +
       minDuration;
 
     const randomStartOffset = Math.floor(
-      Math.random() * ((slot.end - slot.start) / (60 * 1000) - randomDuration)
+      Math.random() * (slotEnd.diff(slotStart, "minutes") - randomDuration)
     );
-    const eventStart = new Date(
-      slot.start.getTime() + randomStartOffset * 60 * 1000
-    );
-    const eventEnd = new Date(
-      eventStart.getTime() + randomDuration * 60 * 1000
-    );
+    const eventStart = slotStart.clone().add(randomStartOffset, "minutes");
+    const eventEnd = eventStart.clone().add(randomDuration, "minutes");
 
     randomEvents.push({
       summary: "Awayme Event",
       description: "This event is created by Awayme",
-      start: { dateTime: eventStart.toISOString(), timeZone: timeZone },
-      end: { dateTime: eventEnd.toISOString(), timeZone: timeZone },
+      start: { dateTime: eventStart.toISOString(), timeZone },
+      end: { dateTime: eventEnd.toISOString(), timeZone },
     });
   }
 
@@ -174,6 +197,7 @@ export async function GET(request: Request) {
 
     // fetch the calendar based on the both id
     let events;
+    const timeZone = user?.timeZone;
     //   Fetch events based on the provider
     if (
       calendar?.provider.toLowerCase() === CalendarTypes.GOOGLE.toLowerCase()
@@ -185,7 +209,12 @@ export async function GET(request: Request) {
       const accessToken = decrypt(access_token);
       const refreshToken = decrypt(refresh_token);
       // pass it to the function
-      events = await getGoogleEvents({ accessToken, refreshToken, maxTime });
+      events = await getGoogleEvents({
+        accessToken,
+        refreshToken,
+        maxTime,
+        timeZone,
+      });
     } else if (
       calendar?.provider.toLowerCase() === CalendarTypes.OUTLOOK.toLowerCase()
     ) {
@@ -216,13 +245,16 @@ export async function GET(request: Request) {
         await calendar.save();
       }
       // pass it to the function
-      events = await getMicrosoftEvents({ accessToken, refreshToken, maxTime });
+      events = await getMicrosoftEvents({
+        accessToken,
+        refreshToken,
+        maxTime,
+        timeZone,
+      });
     }
 
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
     // fetch all the available free slots
-    const freeSlots = findFreeSlots(events, endDate);
+    const freeSlots = findFreeSlots(events, endDate, timeZone);
 
     // Filter freeSlots based on the provided startDate and endDate
     const filteredSlots = freeSlots.filter(
