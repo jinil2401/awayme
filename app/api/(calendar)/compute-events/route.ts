@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import { getMicrosoftEvents, msalConfig } from "@/lib/microsoftClient";
 import { getGoogleEvents } from "@/lib/googleClient";
+import { EVENTS } from "@/constants/events";
+import { PlanTypes } from "@/utils/planTypes";
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
@@ -79,12 +81,14 @@ function createRandomEvents({
   maxDuration,
   percentage,
   timeZone,
+  isPaidUser,
 }: {
   freeSlots: any;
   minDuration: number;
   maxDuration: number;
   percentage: number;
   timeZone: string;
+  isPaidUser: boolean;
 }) {
   const randomEvents: any = [];
 
@@ -120,15 +124,30 @@ function createRandomEvents({
     const eventStart = slotStart.clone().add(randomStartOffset, "minutes");
     const eventEnd = eventStart.clone().add(randomDuration, "minutes");
 
+    // Get a random event title and description if the user is paid
+    let summary = "Awayme Event";
+    let description = "This event is created by Awayme";
+
+    if (isPaidUser) {
+      const randomEvent = getRandomEvent();
+      summary = randomEvent.title;
+      description = randomEvent.description;
+    }
+
     randomEvents.push({
-      summary: "Awayme Event",
-      description: "This event is created by Awayme",
+      summary,
+      description,
       start: { dateTime: eventStart.toISOString(), timeZone },
       end: { dateTime: eventEnd.toISOString(), timeZone },
     });
   }
 
   return randomEvents;
+}
+
+function getRandomEvent() {
+  const randomIndex = Math.floor(Math.random() * EVENTS.length);
+  return EVENTS[randomIndex];
 }
 
 export async function GET(request: Request) {
@@ -179,7 +198,10 @@ export async function GET(request: Request) {
     }
 
     // check if the user exists
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate({
+      path: "plan",
+      select: ["_id", "planId", "name", "numberOfCalendarsAllowed"],
+    });
     if (!user) {
       return new NextResponse(
         JSON.stringify({ message: "User does not exist!" }),
@@ -272,6 +294,8 @@ export async function GET(request: Request) {
       maxDuration,
       percentage,
       timeZone,
+      isPaidUser:
+        user?.plan?.planId?.toLowerCase() !== PlanTypes.FREE.toLowerCase(),
     });
 
     return new NextResponse(
