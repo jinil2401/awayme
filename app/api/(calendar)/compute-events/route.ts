@@ -10,6 +10,7 @@ import { getMicrosoftEvents, msalConfig } from "@/lib/microsoftClient";
 import { getGoogleEvents } from "@/lib/googleClient";
 import { EVENTS } from "@/constants/events";
 import { PlanTypes } from "@/utils/planTypes";
+import Plan from "@/lib/models/plan";
 
 const cca = new ConfidentialClientApplication(msalConfig);
 
@@ -196,6 +197,9 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
+
+    // load all plans
+    await Plan.find({});
 
     // check if the user exists
     const user = await User.findById(userId).populate({

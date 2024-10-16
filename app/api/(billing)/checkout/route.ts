@@ -1,4 +1,3 @@
-// app/api/checkout/route.ts
 import Calendar from "@/lib/models/calendar";
 import Plan from "@/lib/models/plan";
 import User from "@/lib/models/user";
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
     user: new Types.ObjectId(user._id),
   });
 
-  // check if the user is allowed to import the calendar based on the plan
+  // check if the number of user calendars are less than the number of calendars allowed for seleected plan
   if (calendars.length >= plan?.numberOfCalendarsAllowed) {
     // throw an error stating that user does not enough credits to import
     return new NextResponse(
