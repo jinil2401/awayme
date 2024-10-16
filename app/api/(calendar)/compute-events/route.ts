@@ -102,9 +102,7 @@ function createRandomEvents({
   }
 
   // Shuffle and select slots
-  const shuffledSlots = freeSlots
-    .sort(() => 0.3 - Math.random())
-    .slice(0, numberOfEvents);
+  const shuffledSlots = freeSlots.slice(0, numberOfEvents);
 
   for (const slot of shuffledSlots) {
     const slotStart = moment.tz(slot.start, timeZone);
