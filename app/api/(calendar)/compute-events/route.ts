@@ -33,12 +33,26 @@ function findFreeSlots(events: any, endDate: Date, timeZone: string) {
     // Only consider weekdays (Monday to Friday)
     if (day >= 1 && day <= 5) {
       // Set the working hours between 8 AM and 6 PM in the user's timezone
-      const startOfWorkingHours = moment
-        .tz(d.format("YYYY-MM-DD"), timeZone)
-        .set({ hour: 8, minute: 0, second: 0 });
+      let startOfWorkingHours;
       const endOfWorkingHours = moment
         .tz(d.format("YYYY-MM-DD"), timeZone)
         .set({ hour: 18, minute: 0, second: 0 });
+
+      // If processing today's date, start from current time, else start from 8 AM
+      if (d.isSame(now, "day")) {
+        startOfWorkingHours = moment.max(
+          now,
+          moment
+            .tz(d.format("YYYY-MM-DD"), timeZone)
+            .set({ hour: 8, minute: 0, second: 0 })
+        );
+      } else {
+        startOfWorkingHours = moment.tz(d.format("YYYY-MM-DD"), timeZone).set({
+          hour: 8,
+          minute: 0,
+          second: 0,
+        });
+      }
 
       let lastEndTime = startOfWorkingHours;
 
@@ -73,7 +87,44 @@ function findFreeSlots(events: any, endDate: Date, timeZone: string) {
       }
     }
   }
-  return freeSlots;
+  // Now, let's divide the found free slots into chunks of 30, 60, 90, and 120 minutes
+  const updatedFreeSlots = splitIntoTimeChunks(freeSlots, timeZone);
+  return updatedFreeSlots;
+}
+
+// Helper function to split free slots into fixed duration chunks (30, 60, 90, 120 minutes)
+function splitIntoTimeChunks(freeSlots: any[], timeZone: string) {
+  const durations = [120, 90, 60, 30]; // Possible slot durations in minutes
+  const updatedFreeSlots = [];
+
+  for (const slot of freeSlots) {
+    let currentStart = moment.tz(slot.start, timeZone);
+    const slotEnd = moment.tz(slot.end, timeZone);
+
+    while (currentStart.isBefore(slotEnd)) {
+      const availableMinutes = slotEnd.diff(currentStart, "minutes");
+
+      // Find the largest possible duration that fits into the available time
+      const chosenDuration = durations.find(
+        (duration) => duration <= availableMinutes
+      );
+
+      if (!chosenDuration) break; // No valid duration found, exit loop
+
+      const newSlotEnd = currentStart.clone().add(chosenDuration, "minutes");
+
+      // Add the chunk to the updated slots
+      updatedFreeSlots.push({
+        start: currentStart.toDate(),
+        end: newSlotEnd.toDate(),
+      });
+
+      // Move the current start time to the end of the newly created chunk
+      currentStart = newSlotEnd;
+    }
+  }
+
+  return updatedFreeSlots;
 }
 
 function createRandomEvents({
@@ -102,23 +153,28 @@ function createRandomEvents({
   }
 
   // Shuffle and select slots
-  const shuffledSlots = freeSlots.slice(0, numberOfEvents);
+  const shuffledSlots = freeSlots
+    .slice()
+    .sort(() => 0.5 - Math.random())
+    .slice(0, numberOfEvents);
 
   for (const slot of shuffledSlots) {
     const slotStart = moment.tz(slot.start, timeZone);
     const slotEnd = moment.tz(slot.end, timeZone);
 
-    const maxPossibleDuration = Math.min(
-      maxDuration,
-      slotEnd.diff(slotStart, "minutes")
-    );
+    const availableMinutes = slotEnd.diff(slotStart, "minutes");
+
+    // Make sure the event duration fits within the free slot
+    const actualMaxDuration = Math.min(maxDuration, availableMinutes);
+
+    if (actualMaxDuration < minDuration) continue; // Skip this slot if it can't fit the minimum event
 
     const randomDuration =
-      Math.floor(Math.random() * (maxPossibleDuration - minDuration + 1)) +
+      Math.floor(Math.random() * (actualMaxDuration - minDuration + 1)) +
       minDuration;
 
     const randomStartOffset = Math.floor(
-      Math.random() * (slotEnd.diff(slotStart, "minutes") - randomDuration)
+      Math.random() * (availableMinutes - randomDuration)
     );
     const eventStart = slotStart.clone().add(randomStartOffset, "minutes");
     const eventEnd = eventStart.clone().add(randomDuration, "minutes");
@@ -286,8 +342,8 @@ export async function GET(request: Request) {
     );
 
     // set min and max duration of the event
-    const minDuration = 60;
-    const maxDuration = 480;
+    const minDuration = 30;
+    const maxDuration = 120;
 
     // compute the random events based on the free slots and desired percentage of events
     const computedEvents = createRandomEvents({

@@ -246,12 +246,16 @@ export default function FillCalendar() {
                 value={startDate}
                 label="Start Date"
                 placeholder="Select your start date"
-                onChange={(event) =>
+                onChange={(event) => {
                   setState((value) => ({
                     ...value,
                     startDate: event.target.value,
-                  }))
-                }
+                  }));
+                  setError((error) => ({
+                    ...error,
+                    startDateError: "",
+                  }));
+                }}
                 hasError={error.startDateError !== ""}
                 error={error.startDateError}
                 disabled={fetchEvents}
@@ -264,12 +268,16 @@ export default function FillCalendar() {
                 value={endDate}
                 label="End Date"
                 placeholder="Select your end date"
-                onChange={(event) =>
+                onChange={(event) => {
                   setState((value) => ({
                     ...value,
                     endDate: event.target.value,
-                  }))
-                }
+                  }));
+                  setError((error) => ({
+                    ...error,
+                    endDateError: "",
+                  }));
+                }}
                 hasError={error.endDateError !== ""}
                 error={error.endDateError}
                 disabled={fetchEvents}
